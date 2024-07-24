@@ -1,16 +1,11 @@
-import dataclasses
-import io
 import pathlib
-from typing import Sequence
 
-import confluent_kafka
 import pandas as pd
 import pyarrow as pa
-import pyarrow.json
-
 from beavers import Dag
 from beavers.kafka import KafkaDriver, SourceTopic
 
+from coinbase_analytics.json_util import JsonArrowParser
 from coinbase_analytics.perpective_util import (
     create_web_application,
     PerspectiveTableDefinition,
@@ -41,23 +36,6 @@ TICKER_SCHEMA = pa.schema(
 ASSETS = str(pathlib.Path(__file__).parent / "assets")
 
 
-@dataclasses.dataclass(frozen=True)
-class JsonArrowParser:
-    schema: pa.Schema
-
-    def __call__(self, messages: Sequence[confluent_kafka.Message]) -> pa.Table:
-        if messages:
-            with io.BytesIO() as buffer:
-                for message in messages:
-                    if message.value():
-                        buffer.write(message.value())
-                        buffer.write(b"\n")
-                buffer.seek(0)
-                return pyarrow.json.read_json(buffer).cast(self.schema)
-        else:
-            return self.schema.empty_table()
-
-
 def dashboard():
     dag = Dag()
     source = dag.source_stream(empty=TICKER_SCHEMA.empty_table(), name="ticker")
@@ -70,7 +48,7 @@ def dashboard():
         source_topics={
             "ticker": SourceTopic.from_relative_time(
                 "ticker",
-                JsonArrowParser(TICKER_SCHEMA),
+                JsonArrowParser.create(TICKER_SCHEMA),
                 relative_time=pd.to_timedelta("1h"),
             )
         },
