@@ -1,11 +1,7 @@
 """
-Save the data to kafka. You need to run:
-```
-docker run --platform=linux/amd64 -p 9092:9092 -d bashj79/kafka-kraft
-kafka-topics --create --topic ticker --partitions=1 --bootstrap-server=localhost:9092
-kafka-console-consumer --topic ticker --bootstrap-server=localhost:9092
-```
+Listen to market data from coinbase websocket API and publish it to kafka
 """
+
 import asyncio
 import json
 import logging
@@ -27,7 +23,9 @@ def set_logger():
 
 async def run_web_socket(producer: confluent_kafka.Producer):
     async with websockets.connect("wss://ws-feed.exchange.coinbase.com") as ws:
-        await ws.send(json.dumps({"type": "subscribe", "channels": [{"name": "status"}]}))
+        await ws.send(
+            json.dumps({"type": "subscribe", "channels": [{"name": "status"}]})
+        )
         subscribed = []
 
         while True:
@@ -55,14 +53,13 @@ async def run_web_socket(producer: confluent_kafka.Producer):
                     )
                 else:
                     logger.info("Status unchanged")
-            elif data_type == "heartbeat":
-                producer.poll(0.0)
             elif data_type == "subscriptions":
                 logger.info(f"Subscriptions: {data}")
             elif data_type == "error":
                 logger.error(f"Error {data}")
-            else:
+            elif data_type != "heartbeat":
                 logger.error("Unknown data type: {}".format(data_type))
+            producer.poll(0.0)
 
 
 def main():
@@ -71,7 +68,7 @@ def main():
         try:
             asyncio.run(run_web_socket(producer))
         except KeyError:
-            print("Exiting")
+            logger.exception("Stopped by user")
         except websockets.WebSocketException:
             logger.exception("Websocket error")
 

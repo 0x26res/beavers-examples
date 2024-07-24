@@ -1,5 +1,6 @@
 import dataclasses
 import io
+import pathlib
 import threading
 from typing import Sequence
 
@@ -34,6 +35,8 @@ TICKER_SCHEMA = pa.schema(
         pa.field("last_size", pa.float64()),
     ]
 )
+
+ASSETS = str(pathlib.Path(__file__).parent / "assets")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -71,8 +74,8 @@ def table_to_bytes(table: pa.Table) -> bytes:
 
 def perspective_thread(
     manager: perspective.PerspectiveManager,
-    table: perspective.Table,
     kafka_driver: KafkaDriver,
+    table: perspective.Table,
     node: Node,
 ):
     psp_loop = tornado.ioloop.IOLoop()
@@ -102,7 +105,7 @@ def create_web_application(
 
     table = perspective.Table(table_to_bytes(schema.empty_table()), index=index)
     thread = threading.Thread(
-        target=perspective_thread, args=(manager, table, kafka_driver, node)
+        target=perspective_thread, args=(manager, kafka_driver, table, node)
     )
     thread.daemon = True
     thread.start()
@@ -114,6 +117,11 @@ def create_web_application(
                 PerspectiveTornadoHandler,
                 {"manager": manager, "check_origin": True},
             ),
+            (
+                r"/assets/(.*)",
+                tornado.web.StaticFileHandler,
+                {"path": ASSETS, "default_filename": None},
+            ),
             (r"/([a-z0-9_]*)", MainHandler),
         ],
         serve_traceback=True,
@@ -124,6 +132,8 @@ def main():
     dag = Dag()
     source = dag.source_stream(empty=TICKER_SCHEMA.empty_table(), name="ticker")
     latest = dag.pa.latest_by_keys(stream=source, keys=["product_id"])
+
+    print(ASSETS)
 
     kafka_driver = KafkaDriver.create(
         dag,
