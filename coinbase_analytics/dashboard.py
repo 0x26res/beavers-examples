@@ -58,7 +58,7 @@ class JsonArrowParser:
             return self.schema.empty_table()
 
 
-def main():
+def dashboard():
     dag = Dag()
     source = dag.source_stream(empty=TICKER_SCHEMA.empty_table(), name="ticker")
     latest = dag.pa.latest_by_keys(stream=source, keys=["product_id"])
@@ -71,7 +71,7 @@ def main():
             "ticker": SourceTopic.from_relative_time(
                 "ticker",
                 JsonArrowParser(TICKER_SCHEMA),
-                relative_time=pd.to_timedelta("5min"),
+                relative_time=pd.to_timedelta("1h"),
             )
         },
         sink_topics={},
@@ -91,8 +91,9 @@ def main():
         kafka_driver,
         ASSETS,
     )
+    print("Running in http://localhost:8082")
     run_web_app(web_app, 8082)
 
 
 if __name__ == "__main__":
-    main()
+    dashboard()

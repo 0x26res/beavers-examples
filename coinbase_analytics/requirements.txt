@@ -1,9 +1,6 @@
 beavers
-black
 confluent_kafka
-isort
 perspective-python
-tabulate
-tornado
 pyarrow
+tornado
 websockets

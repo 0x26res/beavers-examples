@@ -8,6 +8,7 @@ repos:
       - id: check-yaml
       - id: end-of-file-fixer
       - id: mixed-line-ending
+      - id: requirements-txt-fixer
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     rev: v0.5.4
     hooks:
