@@ -4,14 +4,10 @@ from typing import Literal, Any, Optional
 
 import perspective
 import pyarrow as pa
-import pyarrow.json
 import tornado
 from perspective import PerspectiveManager, PerspectiveTornadoHandler
-
 from beavers import Node
 from beavers.kafka import KafkaDriver
-
-
 
 COMPARATORS = (
     "==",
@@ -77,7 +73,6 @@ class PerspectiveTableDefinition:
         )
 
 
-
 class TableHandler(tornado.web.RequestHandler):
     _tables: Optional[dict[str, TableConfig]] = None
     _default_table: Optional[str] = None
@@ -105,7 +100,6 @@ def table_to_bytes(table: pa.Table) -> bytes:
         return sink.getvalue().to_pybytes()
 
 
-
 @dataclasses.dataclass(frozen=True)
 class UpdateRunner:
     kafka_driver: KafkaDriver
@@ -116,7 +110,6 @@ class UpdateRunner:
             for node, table in self.nodes_and_table:
                 if node.get_cycle_id() >= self.kafka_driver._dag.get_cycle_id():
                     table.update(table_to_bytes(node.get_value()))
-
 
 
 def perspective_thread(
@@ -141,8 +134,6 @@ def perspective_thread(
     )
     callback.start()
     psp_loop.start()
-
-
 
 
 def create_web_application(
@@ -179,7 +170,6 @@ def create_web_application(
         ],
         serve_traceback=True,
     )
-
 
 
 def run_web_app(web_app: tornado.web.Application, port: int):
