@@ -4,7 +4,7 @@ import pyarrow.json
 import pyarrow as pa
 import pytest
 
-from coinbase_analytics.dashboard import fix_schema
+from util.json_util import fix_schema
 
 
 def make_file(payload: bytes) -> io.BytesIO:

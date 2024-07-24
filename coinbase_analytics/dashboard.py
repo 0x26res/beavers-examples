@@ -5,8 +5,8 @@ import pyarrow as pa
 from beavers import Dag
 from beavers.kafka import KafkaDriver, SourceTopic
 
-from coinbase_analytics.json_util import JsonArrowParser
-from coinbase_analytics.perpective_util import (
+from util.json_util import JsonArrowParser
+from util.perpective_util import (
     create_web_application,
     PerspectiveTableDefinition,
     run_web_app,
