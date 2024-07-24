@@ -1,19 +1,21 @@
 import dataclasses
 import io
 import pathlib
-import threading
 from typing import Sequence
 
 import confluent_kafka
 import pandas as pd
-import perspective
 import pyarrow as pa
 import pyarrow.json
-import tornado
-from perspective import PerspectiveManager, PerspectiveTornadoHandler
 
-from beavers import Dag, Node
+from beavers import Dag
 from beavers.kafka import KafkaDriver, SourceTopic
+
+from coinbase_analytics.perpective_util import (
+    create_web_application,
+    PerspectiveTableDefinition,
+    run_web_app,
+)
 
 TICKER_SCHEMA = pa.schema(
     [
@@ -56,84 +58,10 @@ class JsonArrowParser:
             return self.schema.empty_table()
 
 
-class MainHandler(tornado.web.RequestHandler):
-    async def get(self, path: str) -> None:
-        await self.render(
-            "./index.html",
-            perspective_version=perspective.__version__,
-        )
-
-
-def table_to_bytes(table: pa.Table) -> bytes:
-    with pa.BufferOutputStream() as sink:
-        with pa.ipc.new_stream(sink, table.schema) as writer:
-            for batch in table.to_batches():
-                writer.write_batch(batch)
-        return sink.getvalue().to_pybytes()
-
-
-def perspective_thread(
-    manager: perspective.PerspectiveManager,
-    kafka_driver: KafkaDriver,
-    table: perspective.Table,
-    node: Node,
-):
-    psp_loop = tornado.ioloop.IOLoop()
-
-    manager.set_loop_callback(psp_loop.add_callback)
-    manager.host_table("table", table)
-
-    def run_update():
-        if (
-            kafka_driver.run_cycle(0.0)
-            and node.get_cycle_id() >= kafka_driver._dag.get_cycle_id()
-        ):
-            table.update(table_to_bytes(node.get_value()))
-
-    callback = tornado.ioloop.PeriodicCallback(callback=run_update, callback_time=1000)
-    callback.start()
-    psp_loop.start()
-
-
-def create_web_application(
-    node: Node,
-    schema: pa.Schema,
-    index: str,
-    kafka_driver: KafkaDriver,
-) -> tornado.web.Application:
-    manager = PerspectiveManager()
-
-    table = perspective.Table(table_to_bytes(schema.empty_table()), index=index)
-    thread = threading.Thread(
-        target=perspective_thread, args=(manager, kafka_driver, table, node)
-    )
-    thread.daemon = True
-    thread.start()
-
-    return tornado.web.Application(
-        [
-            (
-                r"/websocket",
-                PerspectiveTornadoHandler,
-                {"manager": manager, "check_origin": True},
-            ),
-            (
-                r"/assets/(.*)",
-                tornado.web.StaticFileHandler,
-                {"path": ASSETS, "default_filename": None},
-            ),
-            (r"/([a-z0-9_]*)", MainHandler),
-        ],
-        serve_traceback=True,
-    )
-
-
 def main():
     dag = Dag()
     source = dag.source_stream(empty=TICKER_SCHEMA.empty_table(), name="ticker")
     latest = dag.pa.latest_by_keys(stream=source, keys=["product_id"])
-
-    print(ASSETS)
 
     kafka_driver = KafkaDriver.create(
         dag,
@@ -148,10 +76,22 @@ def main():
         },
         sink_topics={},
     )
-    web_app = create_web_application(latest, TICKER_SCHEMA, "product_id", kafka_driver)
-    web_app.listen(8082)
-    loop = tornado.ioloop.IOLoop.current()
-    loop.start()
+    web_app = create_web_application(
+        [
+            (
+                latest,
+                PerspectiveTableDefinition(
+                    name="latest",
+                    schema=TICKER_SCHEMA,
+                    index_column="product_id",
+                    remove_column="product_id",
+                ),
+            )
+        ],
+        kafka_driver,
+        ASSETS,
+    )
+    run_web_app(web_app, 8082)
 
 
 if __name__ == "__main__":
