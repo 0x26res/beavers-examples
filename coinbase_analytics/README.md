@@ -63,14 +63,14 @@ And go to http://localhost:8082 to see it
 In order to build our dashboard, we'll use Beavers.
 Beavers is a streaming python library optimized for analytics.
 
-At its core, Beavers uses ~~dams~~ DAGs to process incoming data.
-Each node in the dag is a Python function.
+At its core, Beavers uses a ~~dam~~ DAG to process incoming data.
+Each node in the DAG is a Python function.
 
 ```python
 dag = Dag()
 ```
 
-The first node in the dashboard dag is a source node,  called `ticker`.
+The first node in the dashboard DAG is a source node,  called `ticker`.
 Its output is a `pyarrow.Table` for which we need to specify the schema.
 ```python
 ticker = dag.pa.source_table(schema=TICKER_SCHEMA, name="ticker")
