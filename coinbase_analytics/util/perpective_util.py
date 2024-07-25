@@ -1,6 +1,6 @@
 import dataclasses
 import threading
-from typing import Literal, Any, Optional
+from typing import Literal, Any, Optional, Sequence
 
 import perspective
 import pyarrow as pa
@@ -49,6 +49,7 @@ class PerspectiveTableDefinition:
         default_factory=list
     )
     filters: list[tuple[str, str, Any]] = dataclasses.field(default_factory=list)
+    hidden_columns: Sequence[str] = tuple()
 
     def __post_init__(self):
         assert self.index_column in self.schema.names, self.index_column
@@ -58,6 +59,9 @@ class PerspectiveTableDefinition:
             assert isinstance(column, str)
             assert column in self.schema.names
             assert order in ("asc", "desc")
+        for column in self.hidden_columns:
+            assert isinstance(column, str)
+            assert column in self.schema.names
         for each_filter in self.filters:
             assert len(each_filter) in (2, 3)
             assert isinstance(each_filter[0], str), each_filter
@@ -67,7 +71,7 @@ class PerspectiveTableDefinition:
         return TableConfig(
             name=self.name,
             index=self.index_column,
-            columns=[f for f in self.schema.names if not f.startswith("_")],
+            columns=[f for f in self.schema.names if f not in self.hidden_columns],
             sort=[] if self.sort is None else self.sort,
             filters=self.filters,
         )
