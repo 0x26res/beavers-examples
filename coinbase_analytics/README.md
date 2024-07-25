@@ -1,31 +1,48 @@
 # Coinbase Market Data API Analytics
 
+This example shows how you can leverage two powerful python libraries, [Beavers](https://github.com/tradewelltech/beavers) and [Perspective](https://github.com/finos/perspective), to analyse data in realtime and display it in a dashboard.
+This tutorial assumes you are familiar with Kafka and Python and Apache Arrow.
 
-## TLDR:
+# Architecture Overview
 
-This tutorial uses a mix of [beavers][1], [kafka][2], [arrow][3] and [perspective][4] to display market data coming from [Coinbase API][5]
+We will connect to Coinbase's websocket API to receive crypto market updates in real time.
+In order to share this data with other services and decouple producers from consumers, we'll publish this data over [Kafka](https://kafka.apache.org/), as json.
+We'll then run a [Beavers](https://github.com/tradewelltech/beavers) job that will read the data from Kafka, enrich it, and publish it in a perspective dashboard.
 
 
-## Set Up
+# Initial Set Up
 
-### Python Virtual Environment
+You'll need:
+- Git
+- Python (at least 3.10)
+- Docker to run a Kafka cluster
+
+The code for this tutorial is available on [github](https://github.com/0x26res/beavers-examples)
+
+## Clone the repo 
 
 ```shell
-python3.11 -m venv --clear .venv
+git clone https://github.com/0x26res/beavers-examples
+cd beavers-example/coinbase_analytics/
+```
+
+## Set Up the Virtual Environment
+
+```shell
+python3 -m venv --clear .venv
 source ./.venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Kafka
+## Set Up Kafka
 
-You'll need a kafka cluster. 
-The simplest way is to use [kafka-kraft][6] docker image
+We use the [kafka-kraft](https://github.com/bashj79/kafka-kraft-docker) docker image to run a super simple Kafka cluster.
 
+To start the cluster:
 ```shell
 docker run --name=simple_kafka -p 9092:9092 -d bashj79/kafka-kraft
 ```
-
-Once started you can create the topic: 
+Once started you can create a Kafka topic called `ticker`
 ```shell
 docker exec simple_kafka /opt/kafka/bin/kafka-topics.sh \
   --create \
@@ -35,28 +52,28 @@ docker exec simple_kafka /opt/kafka/bin/kafka-topics.sh \
   --replication-factor=1
 ```
 
-### Publish Coinbase data on kafka
+## Publish Coinbase's Market Data on Kafka
 
-Run the `websocket_feed.py` to publish data to kafka:
+In this step, we'll run a simple python job that listen to Coinbase's Websocket market data API, and publish the data on the `ticker` Kafka topic.
+
 ```shell
 python ./websocket_feed.py
 ```
 
-You should now be able to see the data in kafka:
+You should now be able to see the Coinbase data streaming on Kafka. 
 ```shell
 docker exec simple_kafka /opt/kafka/bin/kafka-console-consumer.sh \
   --topic=ticker \
   --bootstrap-server=localhost:9092
 ```
 
-
-### Run the Beavers application:
+## Run the dashboard
 
 ```shell
 python ./dashboard.py
 ```
 
-And go to http://localhost:8082 to see it
+You can see the dashboard in http://localhost:8082.
 
 ## Introducing Beavers
 
@@ -115,10 +132,3 @@ with_change = dag.pa.table_stream(
 ```
 
 You can see it in: http://localhost:8082/latest_with_spread
-
-[1]: https://github.com/tradewelltech/beavers
-[2]: https://kafka.apache.org/
-[3]: https://arrow.apache.org/
-[4]: https://github.com/finos/perspective
-[5]: https://docs.cdp.coinbase.com/exchange/docs/websocket-overview/
-[6]: https://github.com/bashj79/kafka-kraft-docker
