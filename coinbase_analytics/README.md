@@ -75,7 +75,7 @@ python ./dashboard.py
 
 You can see the dashboard in http://localhost:8082.
 
-## Introducing Beavers
+# Introducing Beavers
 
 In order to build our dashboard, we'll use Beavers.
 Beavers is a streaming python library optimized for analytics.
