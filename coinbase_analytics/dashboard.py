@@ -3,6 +3,11 @@ import datetime
 import pathlib
 import sys
 
+from beavers.perspective_wrapper import (
+    PerspectiveTableDefinition,
+    create_web_application,
+    run_web_application,
+)
 import pandas as pd
 import pyarrow as pa
 import pyarrow.compute as pc
@@ -10,11 +15,6 @@ from beavers import Dag
 from beavers.kafka import KafkaDriver, SourceTopic
 
 from util.json_util import JsonArrowParser
-from util.perpective_util import (
-    create_web_application,
-    PerspectiveTableDefinition,
-    run_web_app,
-)
 
 TICKER_SCHEMA = pa.schema(
     [
@@ -39,6 +39,8 @@ TICKER_SCHEMA = pa.schema(
         pa.field("last_size", pa.float64()),
     ]
 )
+TICKER_WITH_SPREAD_SCHEMA = TICKER_SCHEMA.append(pa.field("spread", pa.float64()))
+TICKER_WITH_CHANGE_SCHEMA = TICKER_SCHEMA.append(pa.field("5min_change", pa.float64()))
 
 ASSETS = str(pathlib.Path(__file__).parent / "assets")
 
@@ -94,15 +96,41 @@ def add_5min_change(ticker: pa.Table, history: pa.Table) -> pa.Table:
 def dashboard():
     dag = Dag()
     ticker = dag.pa.source_table(schema=TICKER_SCHEMA, name="ticker")
+    dag.psp.to_perspective(
+        ticker,
+        PerspectiveTableDefinition(
+            name="ticker",
+            index_column="product_id",
+            hidden_columns=("sequence", "trade_id"),
+        ),
+    )
 
     # Simple, stateless transformation:
-    latest_with_spread = dag.stream(add_spread).map(ticker)
+    latest_with_spread = dag.pa.table_stream(
+        add_spread, schema=TICKER_WITH_SPREAD_SCHEMA
+    ).map(ticker)
+    dag.psp.to_perspective(
+        latest_with_spread,
+        PerspectiveTableDefinition(
+            name="ticker_with_spread",
+            index_column="product_id",
+            hidden_columns=("sequence", "trade_id"),
+        ),
+    )
 
     # Keep track of last 10 minutes
     ticker_history = dag.state(TickerHistory()).map(ticker, dag.now())
-    with_change = dag.pa.table_stream(
-        add_5min_change, TICKER_SCHEMA.append(pa.field("5min_change", pa.float64()))
-    ).map(ticker, ticker_history)
+    with_change = dag.pa.table_stream(add_5min_change, TICKER_WITH_CHANGE_SCHEMA).map(
+        ticker, ticker_history
+    )
+    dag.psp.to_perspective(
+        with_change,
+        PerspectiveTableDefinition(
+            name="ticker_with_change",
+            index_column="product_id",
+            hidden_columns=("sequence", "trade_id"),
+        ),
+    )
 
     kafka_driver = KafkaDriver.create(
         dag,
@@ -117,44 +145,8 @@ def dashboard():
         },
         sink_topics={},
     )
-    web_app = create_web_application(
-        [
-            (
-                ticker,
-                PerspectiveTableDefinition(
-                    name="ticker",
-                    schema=TICKER_SCHEMA,
-                    index_column="product_id",
-                    remove_column="product_id",
-                    hidden_columns=("sequence", "trade_id"),
-                ),
-            ),
-            (
-                latest_with_spread,
-                PerspectiveTableDefinition(
-                    name="latest_with_spread",
-                    schema=TICKER_SCHEMA.append(pa.field("spread", pa.float64())),
-                    index_column="product_id",
-                    remove_column="product_id",
-                    hidden_columns=("sequence", "trade_id"),
-                ),
-            ),
-            (
-                with_change,
-                PerspectiveTableDefinition(
-                    name="with_change",
-                    schema=TICKER_SCHEMA.append(pa.field("5min_change", pa.float64())),
-                    index_column="product_id",
-                    remove_column="product_id",
-                    hidden_columns=("sequence", "trade_id"),
-                ),
-            ),
-        ],
-        kafka_driver,
-        ASSETS,
-    )
     print("Running in http://localhost:8082/ticker")
-    run_web_app(web_app, 8082)
+    run_web_application(create_web_application(kafka_driver), 8082)
 
 
 if __name__ == "__main__":
