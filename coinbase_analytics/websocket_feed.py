@@ -69,8 +69,9 @@ def main():
             asyncio.run(run_web_socket(producer))
         except KeyError:
             logger.exception("Stopped by user")
+            break
         except websockets.WebSocketException:
-            logger.exception("Websocket error")
+            logger.exception("Websocket error, restarting")
 
 
 if __name__ == "__main__":
