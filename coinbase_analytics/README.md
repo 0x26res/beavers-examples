@@ -73,7 +73,9 @@ docker exec simple_kafka /opt/kafka/bin/kafka-console-consumer.sh \
 python ./dashboard.py
 ```
 
-You can see the dashboard in http://localhost:8082.
+You can see the dashboard in http://localhost:8082/ticker.
+
+![ticker](./screenshots/ticker.png "Ticker Dashboard")
 
 # Introducing Beavers
 
@@ -110,10 +112,14 @@ def add_spread(table: pa.Table) -> pa.Table:
 
 And add the function to the DAG:
 ```python
-latest_with_spread = dag.state(add_spread).map(ticker)
+ticker_with_spread = dag.pa.table_stream(
+    add_spread, schema=TICKER_WITH_SPREAD_SCHEMA
+).map(ticker)
 ```
 
-You can see it in: http://localhost:8082/latest_with_spread
+You can see it in: http://localhost:8082/ticker_with_spread
+
+![ticker_with_spread](./screenshots/ticker_with_spread.png "Ticker With Spread Dashboard")
 
 ## Advanced Transformation with Beavers
 
@@ -126,9 +132,11 @@ ticker_history = dag.state(TickerHistory()).map(ticker, dag.now())
 ```
 And then do an as of join, to find the price 5 minutes ago and calculate the change
 ```python
-with_change = dag.pa.table_stream(
-    add_5min_change, TICKER_SCHEMA.append(pa.field("5min_change", pa.float64()))
+ticker_with_change = dag.pa.table_stream(
+    add_5min_change, TICKER_WITH_CHANGE_SCHEMA
 ).map(ticker, ticker_history)
 ```
 
-You can see it in: http://localhost:8082/latest_with_spread
+You can see it in: http://localhost:8082/ticker_with_change
+
+![ticker_with_change](./screenshots/ticker_with_change.png "Ticker With Change Dashboard")

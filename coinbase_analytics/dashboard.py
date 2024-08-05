@@ -106,11 +106,11 @@ def dashboard():
     )
 
     # Simple, stateless transformation:
-    latest_with_spread = dag.pa.table_stream(
+    ticker_with_spread = dag.pa.table_stream(
         add_spread, schema=TICKER_WITH_SPREAD_SCHEMA
     ).map(ticker)
     dag.psp.to_perspective(
-        latest_with_spread,
+        ticker_with_spread,
         PerspectiveTableDefinition(
             name="ticker_with_spread",
             index_column="product_id",
@@ -120,11 +120,11 @@ def dashboard():
 
     # Keep track of last 10 minutes
     ticker_history = dag.state(TickerHistory()).map(ticker, dag.now())
-    with_change = dag.pa.table_stream(add_5min_change, TICKER_WITH_CHANGE_SCHEMA).map(
-        ticker, ticker_history
-    )
+    ticker_with_change = dag.pa.table_stream(
+        add_5min_change, TICKER_WITH_CHANGE_SCHEMA
+    ).map(ticker, ticker_history)
     dag.psp.to_perspective(
-        with_change,
+        ticker_with_change,
         PerspectiveTableDefinition(
             name="ticker_with_change",
             index_column="product_id",
