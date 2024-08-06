@@ -11,9 +11,9 @@ We'll then run a [Beavers](https://github.com/tradewelltech/beavers) job that wi
 
 ```mermaid
 flowchart TD
-    A[Coinbase] -->|Websocket| B( websocket.py)
-    B -->|kafka| C(dashboard.py with Beavers)
-    C -->|Perspective| D[Webrowser]
+    A[Coinbase] -->|Websocket| B(websocket.py)
+    B -->|Kafka| C(dashboard.py with Beavers)
+    C -->|Perspective| D[Web Browser]
 ```
   
 ## Initial Set Up
