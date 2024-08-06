@@ -9,6 +9,13 @@ We will connect to Coinbase's websocket API to receive crypto market updates in 
 In order to share this data with other services and decouple producers from consumers, we'll publish this data over [Kafka](https://kafka.apache.org/), as json.
 We'll then run a [Beavers](https://github.com/tradewelltech/beavers) job that will read the data from Kafka, enrich it, and publish it in a perspective dashboard.
 
+```mermaid
+flowchart TD
+    A[Coinbase] -->|Websocket| B( websocket.py)
+    B -->|kafka| C(dashboard.py with Beavers)
+    C -->|Perspective| D[Webrowser]
+```
+  
 ## Initial Set Up
 
 You'll need:
