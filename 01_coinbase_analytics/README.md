@@ -130,22 +130,28 @@ You can see it in: http://localhost:8082/ticker_with_spread
 ### Advanced Transformation with Beavers
 
 Now let's introduce a more advanced computation.
-For each incoming `ticker` record, we would like to calculate the change in the last 5 minutes
+For each incoming `ticker` record, we would like to calculate the average price in the last 5 minutes
 
-For this, first we need to keep track of the history over the last 10 minutes (we do need a bit more than 5 minutes).
+For this we introduce a node that keeps:
+
+- track of all the prices in the last 5 minutes,
+- calculate the 5 minute average
+- adds the 5 minutes average to the table
 
 ```python
-ticker_history = dag.state(TickerHistory()).map(ticker, dag.now())
+ticker_with_average = dag.pa.table_stream(
+        WithAverageCalculator(), TICKER_WITH_AVERAGE_SCHEMA
+    ).map(ticker, dag.now())
 ```
 
 And then do an as of join, to find the price 5 minutes ago and calculate the change
 
 ```python
-ticker_with_change = dag.pa.table_stream(
+ticker_with_average = dag.pa.table_stream(
     add_5min_change, TICKER_WITH_CHANGE_SCHEMA
 ).map(ticker, ticker_history)
 ```
 
-You can see it in: http://localhost:8082/ticker_with_change
+You can see it in: http://localhost:8082/ticker_with_average
 
 ![ticker_with_change](https://raw.githubusercontent.com/0x26res/beavers-examples/master/01_coinbase_analytics/screenshots/ticker_with_change.png "Ticker With Change Dashboard")

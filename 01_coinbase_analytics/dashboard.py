@@ -1,7 +1,6 @@
 import dataclasses
 import datetime
 import pathlib
-import sys
 
 from beavers.perspective_wrapper import (
     PerspectiveTableDefinition,
@@ -40,7 +39,10 @@ TICKER_SCHEMA = pa.schema(
     ]
 )
 TICKER_WITH_SPREAD_SCHEMA = TICKER_SCHEMA.append(pa.field("spread", pa.float64()))
-TICKER_WITH_CHANGE_SCHEMA = TICKER_SCHEMA.append(pa.field("5min_change", pa.float64()))
+TICKER_WITH_AVERAGE_SCHEMA = TICKER_SCHEMA.append(
+    pa.field("average_price", pa.float64())
+)
+
 
 ASSETS = str(pathlib.Path(__file__).parent / "assets")
 
@@ -53,8 +55,8 @@ def add_spread(table: pa.Table) -> pa.Table:
 
 @dataclasses.dataclass()
 class TickerHistory:
-    state: pa.Table = dataclasses.field(default_factory=TICKER_SCHEMA.empty_table)
     window: datetime.timedelta = datetime.timedelta(minutes=10)
+    state: pa.Table = dataclasses.field(default_factory=TICKER_SCHEMA.empty_table)
 
     def __call__(self, ticker: pa.Table, now: pd.Timestamp) -> pa.Table:
         self.state = (
@@ -65,32 +67,33 @@ class TickerHistory:
         return self.state
 
 
-def add_5min_change(ticker: pa.Table, history: pa.Table) -> pa.Table:
-    ticker = (
-        ticker.append_column(
-            "time_minus_5min", pc.subtract(ticker["time"], pd.to_timedelta("5min"))
+@dataclasses.dataclass()
+class WithAverageCalculator:
+    window: datetime.timedelta = datetime.timedelta(minutes=5)
+    state: pa.Table = dataclasses.field(default_factory=TICKER_SCHEMA.empty_table)
+
+    def __call__(self, ticker: pa.Table, now: pd.Timestamp) -> pa.Table:
+        self.state = (
+            pa.concat_tables([self.state, ticker])
+            .filter(
+                pc.field("time")
+                > pa.scalar((now - self.window), pa.timestamp("us", "UTC"))
+            )
+            .sort_by("time")
         )
-        .sort_by("time_minus_5min")
-        .join_asof(
-            history.select(["time", "product_id", "price"]).rename_columns(
-                ["time", "product_id", "price_5min_before"]
-            ),
-            on="time_minus_5min",
-            right_on="time",
-            tolerance=sys.maxsize,
-            by=["product_id"],
+        average = (
+            self.state.filter(
+                pc.is_in(self.state["product_id"], ticker["product_id"].unique())
+            )
+            .group_by("product_id")
+            .aggregate([("price", "mean")])
+            .rename_columns(["product_id", "average_price"])
         )
-    )
-    return ticker.append_column(
-        "5min_change",
-        pc.multiply(
-            pc.divide(
-                pc.subtract(ticker["price_5min_before"], ticker["price"]),
-                ticker["price_5min_before"],
-            ),
-            100.0,
-        ),
-    ).select(TICKER_SCHEMA.names + ["5min_change"])
+        return ticker.join(average, keys="product_id")
+
+
+def add_average_price(ticker: pa.Table, average_price: pa.Table) -> pa.Table:
+    return ticker.join(average_price, keys="product_id")
 
 
 def dashboard():
@@ -119,14 +122,13 @@ def dashboard():
     )
 
     # Keep track of last 10 minutes
-    ticker_history = dag.state(TickerHistory()).map(ticker, dag.now())
-    ticker_with_change = dag.pa.table_stream(
-        add_5min_change, TICKER_WITH_CHANGE_SCHEMA
-    ).map(ticker, ticker_history)
+    ticker_with_average = dag.pa.table_stream(
+        WithAverageCalculator(), TICKER_WITH_AVERAGE_SCHEMA
+    ).map(ticker, dag.now())
     dag.psp.to_perspective(
-        ticker_with_change,
+        ticker_with_average,
         PerspectiveTableDefinition(
-            name="ticker_with_change",
+            name="ticker_with_average",
             index_column="product_id",
             hidden_columns=("sequence", "trade_id"),
         ),
