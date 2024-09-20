@@ -4,7 +4,6 @@ import pathlib
 
 from beavers.perspective_wrapper import (
     PerspectiveTableDefinition,
-    create_web_application,
     run_web_application,
 )
 import pandas as pd
@@ -148,7 +147,7 @@ def dashboard():
         sink_topics={},
     )
     print("Running in http://localhost:8082/ticker")
-    run_web_application(create_web_application(kafka_driver), 8082)
+    run_web_application(kafka_driver, port=8082)
 
 
 if __name__ == "__main__":
