@@ -22,7 +22,9 @@ def set_logger():
 
 
 async def run_web_socket(producer: confluent_kafka.Producer):
-    async with websockets.connect("wss://ws-feed.exchange.coinbase.com") as ws:
+    async with websockets.connect(
+        "wss://ws-feed.exchange.coinbase.com", ping_interval=None
+    ) as ws:
         await ws.send(
             json.dumps({"type": "subscribe", "channels": [{"name": "status"}]})
         )

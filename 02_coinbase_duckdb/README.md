@@ -50,7 +50,7 @@ To start the cluster:
 docker run --name=simple_kafka -p 9092:9092 -d bashj79/kafka-kraft
 ```
 
-Once started you can create a Kafka topic called `ticker`
+Once started you can create 2 Kafka topics called `ticker` and `status`
 
 ```shell
 docker exec simple_kafka /opt/kafka/bin/kafka-topics.sh --create --topic=ticker --partitions=1 --bootstrap-server=localhost:9092 --replication-factor=1
