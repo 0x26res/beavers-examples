@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Query</title>
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico"/>
+    <link rel="shortcut icon" type="image/x-icon" href="/assets/favicon.ico"/>
+    <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no"
+    />
+    <script type="module"
+            src="https://cdn.jsdelivr.net/npm/@finos/perspective@{{perspective_version}}/dist/cdn/perspective.js"></script>
+    <script type="module"
+            src="https://cdn.jsdelivr.net/npm/@finos/perspective-viewer@{{perspective_version}}/dist/cdn/perspective-viewer.js"></script>
+    <script type="module"
+            src="https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-datagrid@{{perspective_version}}/dist/cdn/perspective-viewer-datagrid.js"></script>
+    <script type="module"
+            src="https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-d3fc@{{perspective_version}}/dist/cdn/perspective-viewer-d3fc.js"></script>
+
+    <link
+            rel="stylesheet"
+            crossorigin="anonymous"
+            href="https://cdn.jsdelivr.net/npm/@finos/perspective-viewer@{{perspective_version}}/dist/css/pro.css"
+    />
+
+    <style>
+        body {
+            height: 100vh;
+            width: 100vw;
+            font-family: 'Roboto Mono';
+            overflow: scroll;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .item {
+            display: flex;
+            flex-direction: column;
+            max-height: 1000px;
+            gap: 10px;
+            position: relative;
+        }
+
+        .table-links {
+            display: flex;
+            gap: 10px;
+        }
+
+        .perspective-table-class {
+            position: relative;
+            height: 1000px;
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <div>
+        <form action="/query" method="post">
+            <textarea name="query" cols="200" rows="10" id="query" placeholder="SELECT * FROM test_table;">{% raw query %}</textarea>
+            <br>
+            <button type="submit">Query</button>
+        </form>
+    </div>
+    {% if table_name is not None %}
+    <div class="item">
+        <perspective-viewer id="viewer" class="perspective-table-class"></perspective-viewer>
+    </div>
+    {% end %}
+    {% if error_message is not None %}
+    <div>
+        {% raw error_message %}
+    </div>
+    {% end %}
+</div>
+
+
+
+{% if table_name is not None %}
+<script type="module">
+    import perspective
+        from "https://cdn.jsdelivr.net/npm/@finos/perspective@{{perspective_version}}/dist/cdn/perspective.js";
+
+    window.addEventListener("DOMContentLoaded", async function () {
+        const viewer = document.getElementById("viewer");
+
+        const worker = await perspective.worker();
+        const table_url = "http://" + window.location.host + "/table/{{table_name}}";
+        const req = await fetch(table_url)
+        const arrow = await req.arrayBuffer();
+        const table = await worker.table(arrow.slice());
+        viewer.load(table);
+
+        let config = await viewer.save();
+
+        config.name = "{% raw table_name %}";
+        config.title = "{% raw table_name %}";
+        config.settings = true;
+
+        await viewer.restore(config);
+    });
+</script>
+{% end %}
+
+
+</body>
+</html>
