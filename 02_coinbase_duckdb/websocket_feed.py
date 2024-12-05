@@ -66,7 +66,7 @@ async def run_web_socket(producer: confluent_kafka.Producer):
             elif data_type == "error":
                 logger.error(f"Error {data}")
             elif data_type == "heartbeat":
-                logger.info(f"Heartbeat {data}")
+                logger.debug(f"Heartbeat {data}")
             else:
                 logger.error("Unknown data type: {}".format(data_type))
             producer.poll(0.0)
