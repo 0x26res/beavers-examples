@@ -82,4 +82,4 @@ python ./duckdb_server.py
 
 You can see the query console in http://localhost:8082/.
 
-![query console](https://raw.githubusercontent.com/0x26res/beavers-examples/master/01_coinbase_analytics/screenshots/query_console.png "Query Console")
+![query console](https://raw.githubusercontent.com/0x26res/beavers-examples/master/02_coinbase_duckdb/screenshots/query_console.png "Query Console")
