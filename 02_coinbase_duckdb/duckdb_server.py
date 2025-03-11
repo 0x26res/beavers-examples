@@ -162,10 +162,10 @@ def register_driver(
 def duckdb_server(port: int = 8082):
     dag = Dag()
     ticker_source = dag.pa.source_table(schema=TICKER_SCHEMA, name="ticker")
-    ticker_state = dag.pa.latest_by_keys(ticker_source, keys=["product_id"])
+    ticker_state = dag.pa.last_by_keys(ticker_source, keys=["product_id"])
 
     status_source = dag.pa.source_table(schema=STATUS_SCHEMA, name="status")
-    status_state = dag.pa.latest_by_keys(status_source, keys=["id"])
+    status_state = dag.pa.last_by_keys(status_source, keys=["id"])
 
     tables = dag.state(dict).map(ticker=ticker_state, status=status_state)
     sink = dag.sink("tables", tables)
