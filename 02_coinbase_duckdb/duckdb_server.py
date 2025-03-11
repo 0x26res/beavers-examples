@@ -8,7 +8,7 @@ from typing import Callable
 
 import perspective
 import pyarrow as pa
-from beavers import Dag
+from beavers import Dag, Node
 from beavers.perspective_wrapper import ASSETS_DIRECTORY, _table_to_bytes
 from beavers.kafka import KafkaDriver, SourceTopic
 import pandas as pd
@@ -161,13 +161,21 @@ def register_driver(
 
 def duckdb_server(port: int = 8082):
     dag = Dag()
-    ticker_source = dag.pa.source_table(schema=TICKER_SCHEMA, name="ticker")
-    ticker_state = dag.pa.last_by_keys(ticker_source, keys=["product_id"])
+    ticker_source: Node[pa.Table] = dag.pa.source_table(
+        schema=TICKER_SCHEMA, name="ticker"
+    )
+    ticker_state: Node[pa.Table] = dag.pa.last_by_keys(
+        ticker_source, keys=["product_id"]
+    )
 
-    status_source = dag.pa.source_table(schema=STATUS_SCHEMA, name="status")
-    status_state = dag.pa.last_by_keys(status_source, keys=["id"])
+    status_source: Node[pa.Table] = dag.pa.source_table(
+        schema=STATUS_SCHEMA, name="status"
+    )
+    status_state: Node[pa.Table] = dag.pa.last_by_keys(status_source, keys=["id"])
 
-    tables = dag.state(dict).map(ticker=ticker_state, status=status_state)
+    tables: Node[dict[str, pa.Table]] = dag.state(dict).map(
+        ticker=ticker_state, status=status_state
+    )
     sink = dag.sink("tables", tables)
 
     kafka_driver = KafkaDriver.create(
