@@ -162,6 +162,4 @@ cython_debug/
 #.idea/
 
 # aiven secrets
-*.pem
-*.cert
-*.key
+.secrets

@@ -49,10 +49,9 @@ uv pip install -r requirements.txt
 We use aiven for kafka. You need to create and account, and set up the secret keys.
 
 ```shell
-export KAFKA_BOOTSTRAP_SERVERS=
-export KAFKA_SSL_CA=
-export KAFKA_SSL_CERT=
-export KAFKA_SSL_KEY=
+export KAFKA_BOOTSTRAP_SERVERS="xxx"
+mkdir -p .secrets
+touch .secrets/ca.pem .secrets/service.cert .secrets/service.key # fill from the values in 
 ```
 
 Once started you can create 2 Kafka topics called `ticker` and `status`

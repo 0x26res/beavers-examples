@@ -22,6 +22,17 @@ def set_logger():
     )
 
 
+def on_delivery(err: confluent_kafka.KafkaError, msg: confluent_kafka.Message):
+    if err is not None:
+        logger.error(f"Delivery failed for {msg.topic()}[{msg.key()}]: {err}")
+    else:
+        logger.debug(f"Delivered to {msg.topic()}[{msg.partition()}] @ {msg.offset()}")
+
+
+def on_error(err: confluent_kafka.KafkaError):
+    logger.error(f"Producer error: {err}")
+
+
 async def run_web_socket(producer: confluent_kafka.Producer):
     async with websockets.connect(
         "wss://ws-feed.exchange.coinbase.com", ping_interval=None
@@ -74,13 +85,17 @@ async def run_web_socket(producer: confluent_kafka.Producer):
 
 
 def main():
-    producer = confluent_kafka.Producer({
-        "bootstrap.servers": os.environ["KAFKA_BOOTSTRAP_SERVERS"],
-        "security.protocol": "SSL",
-        "ssl.ca.location": os.environ.get("KAFKA_SSL_CA", "ca.pem"),
-        "ssl.certificate.location": os.environ.get("KAFKA_SSL_CERT", "service.cert"),
-        "ssl.key.location": os.environ.get("KAFKA_SSL_KEY", "service.key"),
-    })
+    producer = confluent_kafka.Producer(
+        {
+            "bootstrap.servers": os.environ["KAFKA_BOOTSTRAP_SERVERS"],
+            "security.protocol": "SSL",
+            "ssl.ca.location": os.environ.get("KAFKA_SSL_CA", ".secrets/ca.pem"),
+            "ssl.certificate.location": os.environ.get("KAFKA_SSL_CERT", ".secrets/service.cert"),
+            "ssl.key.location": os.environ.get("KAFKA_SSL_KEY", ".secrets/service.key"),
+        },
+        on_delivery=on_delivery,
+        error_cb=on_error,
+    )
     while True:
         try:
             asyncio.run(run_web_socket(producer))
