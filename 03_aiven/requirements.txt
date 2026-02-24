@@ -1,0 +1,5 @@
+beavers[pyarrow, confluent_kafka, perspective-python]
+duckdb
+pytest
+tornado
+websockets
