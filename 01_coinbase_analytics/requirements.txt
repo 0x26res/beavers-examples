@@ -1,6 +1,6 @@
 beavers
 confluent_kafka
-perspective-python
+perspective-python<4
 pyarrow
 pytest
 tornado

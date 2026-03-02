@@ -1,5 +1,6 @@
 beavers[pyarrow, confluent_kafka, perspective-python]
 duckdb
+perspective-python<4
 pytest
 tornado
 websockets

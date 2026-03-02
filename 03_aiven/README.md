@@ -70,8 +70,7 @@ You should now be able to see the Coinbase data streaming on Kafka in the Aiven 
 
 ### Run the Dashboard
 
-
-The dashboard consumes the data from aiven kafka and displays it in realtime. 
+The dashboard consumes the data from aiven kafka and displays it in realtime.
 
 ```shell
 uv run python ./dashboard.py

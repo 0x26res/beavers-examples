@@ -23,6 +23,50 @@ BASE64_CHARS = string.ascii_letters + string.digits
 DEFAULT_QUERY = "SELECT * FROM ticker JOIN status ON ticker.product_id = status.id"
 
 
+TICKER_SCHEMA = pa.schema(
+    [
+        pa.field("sequence", pa.int64()),
+        pa.field("product_id", pa.string()),
+        # Historic info:
+        pa.field("open_24h", pa.float64()),
+        pa.field("low_24h", pa.float64()),
+        pa.field("high_24h", pa.float64()),
+        pa.field("volume_24h", pa.float64()),
+        pa.field("volume_30d", pa.float64()),
+        # Bid/Off info:
+        pa.field("best_bid", pa.float64()),
+        pa.field("best_bid_size", pa.float64()),
+        pa.field("best_ask", pa.float64()),
+        pa.field("best_ask_size", pa.float64()),
+        # Last trade info:
+        pa.field("side", pa.string()),
+        pa.field("price", pa.float64()),
+        pa.field("time", pa.timestamp("ns", "UTC")),
+        pa.field("trade_id", pa.int64()),
+        pa.field("last_size", pa.float64()),
+    ]
+)
+STATUS_SCHEMA = pa.schema(
+    [
+        pa.field("id", pa.string()),
+        pa.field("base_currency", pa.string()),
+        pa.field("quote_currency", pa.string()),
+        pa.field("base_increment", pa.float64()),
+        pa.field("quote_increment", pa.float64()),
+        pa.field("display_name", pa.string()),
+        pa.field("status", pa.string()),
+        pa.field("status_message", pa.string()),
+        pa.field("min_market_funds", pa.float64()),
+        pa.field("post_only", pa.bool_()),
+        pa.field("limit_only", pa.bool_()),
+        pa.field("cancel_only", pa.bool_()),
+        pa.field("fx_stablecoin", pa.bool_()),
+        pa.field("type", pa.string()),
+        pa.field("margin_enabled", pa.bool_()),
+        pa.field("auction_mode", pa.bool_()),
+        pa.field("max_slippage_percentage", pa.float64()),
+    ]
+)
 
 
 def generate_id() -> str:
