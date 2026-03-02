@@ -2,7 +2,7 @@ default_language_version:
   python: python3.10
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v6.0.0
     hooks:
       - id: check-toml
       - id: check-yaml
@@ -10,13 +10,14 @@ repos:
       - id: mixed-line-ending
       - id: requirements-txt-fixer
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.5.4
+    rev: v0.15.4
     hooks:
-      - id: ruff
+      - id: ruff-check
         args:
           - "--fix"
+      - id: ruff-format
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.41.0
+    rev: v0.47.0
     hooks:
         - id: markdownlint
           args:

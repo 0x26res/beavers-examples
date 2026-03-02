@@ -5,8 +5,14 @@ from typing import Optional, Sequence, Tuple, Type
 import confluent_kafka
 import protarrow
 import pyarrow as pa
-from confluent_kafka.schema_registry import SchemaRegistryClient, record_subject_name_strategy
-from confluent_kafka.schema_registry.protobuf import ProtobufDeserializer, ProtobufSerializer
+from confluent_kafka.schema_registry import (
+    SchemaRegistryClient,
+    record_subject_name_strategy,
+)
+from confluent_kafka.schema_registry.protobuf import (
+    ProtobufDeserializer,
+    ProtobufSerializer,
+)
 from google.protobuf.message import Message as ProtoMessage
 from google.protobuf.timestamp_pb2 import Timestamp
 
@@ -34,9 +40,17 @@ def make_ticker(data: dict) -> Ticker:
     if "product_id" in data:
         kwargs["product_id"] = data["product_id"]
     for field in (
-        "open_24h", "low_24h", "high_24h", "volume_24h", "volume_30d",
-        "best_bid", "best_bid_size", "best_ask", "best_ask_size",
-        "price", "last_size",
+        "open_24h",
+        "low_24h",
+        "high_24h",
+        "volume_24h",
+        "volume_30d",
+        "best_bid",
+        "best_bid_size",
+        "best_ask",
+        "best_ask_size",
+        "price",
+        "last_size",
     ):
         v = _optional_float(data, field)
         if v is not None:
@@ -54,21 +68,32 @@ def make_ticker(data: dict) -> Ticker:
 def make_status(data: dict) -> Status:
     kwargs = {}
     for field in (
-        "id", "base_currency", "quote_currency", "display_name",
-        "status", "status_message", "type",
+        "id",
+        "base_currency",
+        "quote_currency",
+        "display_name",
+        "status",
+        "status_message",
+        "type",
     ):
         if field in data:
             kwargs[field] = data[field]
     for field in (
-        "base_increment", "quote_increment", "min_market_funds",
+        "base_increment",
+        "quote_increment",
+        "min_market_funds",
         "max_slippage_percentage",
     ):
         v = _optional_float(data, field)
         if v is not None:
             kwargs[field] = v
     for field in (
-        "post_only", "limit_only", "cancel_only", "fx_stablecoin",
-        "margin_enabled", "auction_mode",
+        "post_only",
+        "limit_only",
+        "cancel_only",
+        "fx_stablecoin",
+        "margin_enabled",
+        "auction_mode",
     ):
         if field in data:
             kwargs[field] = bool(data[field])
