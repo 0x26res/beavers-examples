@@ -1,0 +1,23 @@
+[project]
+name = "beavers-aiven-example"
+version = "0.1.0"
+description = "Beavers & Aiven Kafka example"
+requires-python = ">=3.10"
+dependencies = [
+    "beavers[pyarrow,confluent_kafka,perspective-python]",
+    "confluent-kafka[protobuf]",
+    "duckdb",
+    "googleapis-common-protos",
+    "grpcio",
+    "grpcio-tools",
+    "perspective-python<4",
+    "protarrow",
+    "protobuf",
+    "tornado",
+    "websockets",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+]
