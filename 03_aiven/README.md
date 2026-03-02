@@ -18,6 +18,7 @@ flowchart TD
     A[Coinbase] -->|Websocket| B(websocket.py)
     B -->|Aiven Kafka + Protobuf + Schema Registry| C(dashboard.py)
     C -->|Perspective| D[Web Browser]
+    C -->|Save/Load configs| E[(Aiven PostgreSQL)]
 ```
 
 ## Initial Set Up
@@ -100,3 +101,17 @@ uv run dashboard
 ```
 
 You can see the dashboard in http://localhost:8082/ticker.
+
+### Saving Dashboards
+
+Dashboard configurations are persisted in Aiven PostgreSQL. This lets you save a customized Perspective viewer layout (columns, sort, filters, chart type, pivots) and come back to it later.
+
+**How it works:**
+
+1. Open any table view (e.g. http://localhost:8082/ticker)
+2. Customize the Perspective viewer interactively (change columns, add filters, switch to a chart, etc.)
+3. Enter a name and click "Save Dashboard" — the viewer config is saved as JSONB in a `dashboards` table in PostgreSQL
+4. Browse saved dashboards at http://localhost:8082/dashboards
+5. Click a saved dashboard to view it — it loads live data from Kafka with the saved viewer layout restored
+
+The `dashboards` table is created automatically on startup. It stores the viewer configuration as JSONB alongside the dashboard name and the Perspective table it connects to.
