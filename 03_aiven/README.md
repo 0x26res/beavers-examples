@@ -1,6 +1,9 @@
 # Beavers & Aiven
 
-This example shows how you can use beavers with Aiven kafka free tier account.
+This example shows how you can use [Beavers](https://github.com/tradewelltech/beavers)
+with [Aiven](https://aiven.io/) kafka free tier account, and their schema registry with Protobuf.
+
+![aiven](https://raw.githubusercontent.com/0x26res/beavers-examples/master/03_aiven/screenshots/screenshot.png "Aiven")
 
 ## Architecture Overview
 
@@ -13,7 +16,7 @@ We'll then run a [Beavers](https://github.com/tradewelltech/beavers) job that wi
 ```mermaid
 flowchart TD
     A[Coinbase] -->|Websocket| B(websocket.py)
-    B -->|Aiven Kafka| C(dashboard.py)
+    B -->|Aiven Kafka + Protobuf + Schema Registry| C(dashboard.py)
     C -->|Perspective| D[Web Browser]
 ```
 
@@ -65,7 +68,7 @@ jq -r '"export KAFKA_BOOTSTRAP_SERVERS=\"" + .service_uri + "\""' .secrets/kafka
 jq -r '"export SCHEMA_REGISTRY_URI=\"" + .connection_info.schema_registry_uri + "\""' .secrets/kafka.json
 ```
 
-Also, you need to create topics `ticker` and `status` in the Aiven UI.
+Also, you need to create topics `ticker` and `status` in the Aiven web console.
 
 ### Publish Coinbase's Market Data on Kafka
 
