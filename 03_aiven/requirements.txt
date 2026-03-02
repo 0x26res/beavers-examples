@@ -8,3 +8,5 @@ grpcio-tools
 grpcio
 googleapis-common-protos
 confluent-kafka[protobuf]
+protarrow
+perspective-python<4

@@ -1,15 +1,14 @@
 # Beavers & Aiven
 
-This example shows how you can use beavers with Aiven kafka
+This example shows how you can use beavers with Aiven kafka free tier account.
 
 ## Architecture Overview
 
 We will connect to Coinbase's websocket API to receive crypto market price and status update in real time.
 In order to share this data with other services and decouple producers from consumers, we'll publish this data
 over [Kafka](https://kafka.apache.org/) to aiven.
-It will use protobuf, and the schema registry.
-We'll then run a [Beavers](https://github.com/tradewelltech/beavers) job that will read the data from aiven, and show it
-in a basic UI.
+It will use protobuf, and the schema registry provided by Aiven.
+We'll then run a [Beavers](https://github.com/tradewelltech/beavers) job that will read the data from aiven, and show it in a basic UI.
 
 ```mermaid
 flowchart TD

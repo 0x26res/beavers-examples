@@ -1,42 +1,23 @@
 import dataclasses
 import datetime
+import os
 import pathlib
 
-from beavers.perspective_wrapper import (
-    PerspectiveTableDefinition,
-    run_web_application,
-)
 import pandas as pd
+import protarrow
 import pyarrow as pa
 import pyarrow.compute as pc
 from beavers import Dag
 from beavers.kafka import KafkaDriver, SourceTopic
-
-from util.json_util import JsonArrowParser
-
-TICKER_SCHEMA = pa.schema(
-    [
-        pa.field("sequence", pa.int64()),
-        pa.field("product_id", pa.string()),
-        # Historic info:
-        pa.field("open_24h", pa.float64()),
-        pa.field("low_24h", pa.float64()),
-        pa.field("high_24h", pa.float64()),
-        pa.field("volume_24h", pa.float64()),
-        pa.field("volume_30d", pa.float64()),
-        # Bid/Off info:
-        pa.field("best_bid", pa.float64()),
-        pa.field("best_bid_size", pa.float64()),
-        pa.field("best_ask", pa.float64()),
-        pa.field("best_ask_size", pa.float64()),
-        # Last trade info:
-        pa.field("side", pa.string()),
-        pa.field("price", pa.float64()),
-        pa.field("time", pa.timestamp("ns", "UTC")),
-        pa.field("trade_id", pa.int64()),
-        pa.field("last_size", pa.float64()),
-    ]
+from beavers.perspective_wrapper import (
+    PerspectiveTableDefinition,
+    run_web_application,
 )
+
+from aiven_protos.coinbase_pb2 import Ticker
+from util.proto_util import ProtoArrowParser
+
+TICKER_SCHEMA = protarrow.message_type_to_schema(Ticker)
 TICKER_WITH_SPREAD_SCHEMA = TICKER_SCHEMA.append(pa.field("spread", pa.float64()))
 TICKER_WITH_AVERAGE_SCHEMA = TICKER_SCHEMA.append(
     pa.field("average_price", pa.float64())
@@ -135,12 +116,25 @@ def dashboard():
 
     kafka_driver = KafkaDriver.create(
         dag,
-        producer_config={"bootstrap.servers": "localhost:9092"},
-        consumer_config={"group.id": "beavers", "bootstrap.servers": "localhost:9092"},
+        producer_config={
+            "bootstrap.servers": os.environ["KAFKA_BOOTSTRAP_SERVERS"],
+            "security.protocol": "SSL",
+            "ssl.ca.location": os.environ.get("KAFKA_SSL_CA", ".secrets/ca.pem"),
+            "ssl.certificate.location": os.environ.get("KAFKA_SSL_CERT", ".secrets/service.cert"),
+            "ssl.key.location": os.environ.get("KAFKA_SSL_KEY", ".secrets/service.key"),
+        },
+        consumer_config={
+            "group.id": "beavers",
+            "bootstrap.servers": os.environ["KAFKA_BOOTSTRAP_SERVERS"],
+            "security.protocol": "SSL",
+            "ssl.ca.location": os.environ.get("KAFKA_SSL_CA", ".secrets/ca.pem"),
+            "ssl.certificate.location": os.environ.get("KAFKA_SSL_CERT", ".secrets/service.cert"),
+            "ssl.key.location": os.environ.get("KAFKA_SSL_KEY", ".secrets/service.key"),
+        },
         source_topics={
             "ticker": SourceTopic.from_relative_time(
                 "ticker",
-                JsonArrowParser.create(TICKER_SCHEMA),
+                ProtoArrowParser.create(Ticker),
                 relative_time=pd.to_timedelta("1h"),
             )
         },
