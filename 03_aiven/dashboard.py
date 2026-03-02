@@ -27,6 +27,18 @@ TICKER_WITH_AVERAGE_SCHEMA = TICKER_SCHEMA.append(
 ASSETS = str(pathlib.Path(__file__).parent / "assets")
 
 
+def add_dollar_volume(table: pa.Table) -> pa.Table:
+    return table.set_column(
+        table.schema.get_field_index("volume_24h"),
+        "volume_24h",
+        pc.multiply(table["volume_24h"], table["price"]),
+    ).set_column(
+        table.schema.get_field_index("volume_30d"),
+        "volume_30d",
+        pc.multiply(table["volume_30d"], table["price"]),
+    )
+
+
 def add_spread(table: pa.Table) -> pa.Table:
     return table.append_column(
         "spread", pc.subtract(table["best_ask"], table["best_bid"])
@@ -78,7 +90,10 @@ def add_average_price(ticker: pa.Table, average_price: pa.Table) -> pa.Table:
 
 def dashboard():
     dag = Dag()
-    ticker = dag.pa.source_table(schema=TICKER_SCHEMA, name="ticker")
+    ticker_raw = dag.pa.source_table(schema=TICKER_SCHEMA, name="ticker")
+    ticker = dag.pa.table_stream(add_dollar_volume, schema=TICKER_SCHEMA).map(
+        ticker_raw
+    )
     dag.psp.to_perspective(
         ticker,
         PerspectiveTableDefinition(
