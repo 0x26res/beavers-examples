@@ -74,14 +74,20 @@
             const tableName = "{{ dashboard['table_name'] }}";
             const savedConfig = {% raw viewer_config_json %};
 
+
+            console.log("processing");
             const ws_protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
             const websocket_uri = ws_protocol + "//" + window.location.host + "/websocket";
+            console.log("opening websocket");
             const websocket = await perspective.websocket(websocket_uri);
+            console.log("opening table");
             const table = await websocket.open_table(tableName);
 
+            console.log("loading table");
             await viewer.load(table);
+            console.log("restoring configtable");
             await viewer.restore(savedConfig);
-
+            console.log("map dom");
             document.getElementById("save-btn").addEventListener("click", async () => {
                 const config = await viewer.save();
                 const resp = await fetch("/api/dashboards", {

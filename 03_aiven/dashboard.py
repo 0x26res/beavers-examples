@@ -1,6 +1,7 @@
 import dataclasses
 import datetime
 import pathlib
+import uuid
 
 import pandas as pd
 import perspective
@@ -178,7 +179,6 @@ def run_dashboard_app(kafka_driver: KafkaDriver, port: int = 8082) -> None:
         serve_traceback=True,
     )
     web_app.listen(port)
-    print(f"Running on http://localhost:{port}/ticker")
     print(f"Dashboards at http://localhost:{port}/dashboards")
     loop = tornado.ioloop.IOLoop.current()
     loop.call_later(0, perspective_thread, server, kafka_driver, nodes)
@@ -230,7 +230,7 @@ def dashboard():
         dag,
         producer_config=get_kafka_ssl_config(),
         consumer_config={
-            "group.id": "beavers",
+            "group.id": str(uuid.uuid4()),
             **get_kafka_ssl_config(),
         },
         source_topics={
