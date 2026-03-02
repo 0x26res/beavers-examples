@@ -3,18 +3,31 @@ import datetime
 import pathlib
 
 import pandas as pd
+import perspective
 import protarrow
 import pyarrow as pa
 import pyarrow.compute as pc
+import tornado
 from beavers import Dag
 from beavers.kafka import KafkaDriver, SourceTopic
 from beavers.perspective_wrapper import (
+    ASSETS_DIRECTORY,
     PerspectiveTableDefinition,
-    run_web_application,
+    _PerspectiveNode,
+    perspective_thread,
 )
+from perspective.handlers.tornado import PerspectiveTornadoHandler
 
 from aiven_protos.coinbase_pb2 import Ticker
+from dashboard_handlers import (
+    DashboardApiHandler,
+    DashboardDetailHandler,
+    DashboardListHandler,
+    DashboardViewHandler,
+)
+from dashboard_store import DashboardStore
 from util.kafka_util import get_kafka_ssl_config
+from util.postgres_util import get_connection
 from util.proto_util import ProtoArrowParser
 
 TICKER_SCHEMA = protarrow.message_type_to_schema(Ticker)
@@ -22,9 +35,6 @@ TICKER_WITH_SPREAD_SCHEMA = TICKER_SCHEMA.append(pa.field("spread", pa.float64()
 TICKER_WITH_AVERAGE_SCHEMA = TICKER_SCHEMA.append(
     pa.field("average_price", pa.float64())
 )
-
-
-ASSETS = str(pathlib.Path(__file__).parent / "assets")
 
 
 def add_dollar_volume(table: pa.Table) -> pa.Table:
@@ -88,6 +98,93 @@ def add_average_price(ticker: pa.Table, average_price: pa.Table) -> pa.Table:
     return ticker.join(average_price, keys="product_id")
 
 
+_TEMPLATES_DIR = str(pathlib.Path(__file__).parent / "templates")
+
+
+class TableWithSaveHandler(tornado.web.RequestHandler):
+    """Like TableRequestHandler but renders a template with a save button."""
+
+    _tables = None
+    _default_table = None
+
+    def initialize(self, table_configs):
+        self._tables = {tc.name: tc for tc in table_configs}
+        self._default_table = table_configs[0].name
+
+    async def get(self, path):
+        table_name = path or self._default_table
+        table_config = self._tables[table_name]
+        await self.render(
+            _TEMPLATES_DIR + "/table_with_save.html",
+            table_config=table_config,
+            perspective_version=perspective.__version__,
+        )
+
+
+def run_dashboard_app(kafka_driver: KafkaDriver, port: int = 8082) -> None:
+    server = perspective.Server()
+
+    nodes: list[_PerspectiveNode] = []
+    for node in kafka_driver._dag._nodes:
+        if isinstance(node._function, _PerspectiveNode):
+            nodes.append(node._function)
+    assert len(nodes) > 0, "No perspective table nodes"
+
+    table_configs = [node.get_table_config() for node in nodes]
+    table_names = [tc.name for tc in table_configs]
+
+    conn = get_connection()
+    store = DashboardStore(conn)
+    store.ensure_table()
+
+    web_app = tornado.web.Application(
+        [
+            (
+                r"/websocket",
+                PerspectiveTornadoHandler,
+                {"perspective_server": server},
+            ),
+            (
+                r"/assets/(.*)",
+                tornado.web.StaticFileHandler,
+                {"path": ASSETS_DIRECTORY, "default_filename": None},
+            ),
+            (
+                r"/api/dashboards",
+                DashboardApiHandler,
+                {"store": store},
+            ),
+            (
+                r"/api/dashboards/(.+)",
+                DashboardDetailHandler,
+                {"store": store},
+            ),
+            (
+                r"/dashboards",
+                DashboardListHandler,
+                {"store": store, "table_names": table_names},
+            ),
+            (
+                r"/dashboards/(.+)",
+                DashboardViewHandler,
+                {"store": store},
+            ),
+            (
+                r"/([a-z0-9_]*)",
+                TableWithSaveHandler,
+                {"table_configs": table_configs},
+            ),
+        ],
+        serve_traceback=True,
+    )
+    web_app.listen(port)
+    print(f"Running on http://localhost:{port}/ticker")
+    print(f"Dashboards at http://localhost:{port}/dashboards")
+    loop = tornado.ioloop.IOLoop.current()
+    loop.call_later(0, perspective_thread, server, kafka_driver, nodes)
+    loop.start()
+
+
 def dashboard():
     dag = Dag()
     ticker_raw = dag.pa.source_table(schema=TICKER_SCHEMA, name="ticker")
@@ -145,8 +242,7 @@ def dashboard():
         },
         sink_topics={},
     )
-    print("Running in http://localhost:8082/ticker")
-    run_web_application(kafka_driver, port=8082)
+    run_dashboard_app(kafka_driver, port=8082)
 
 
 if __name__ == "__main__":

@@ -45,15 +45,19 @@ cd beavers-examples/03_aiven/
 uv sync
 ```
 
-### Set Up Aiven Kafka
+### Set Up Aiven Kafka And Postgres
 
-We use aiven for kafka. You need to create and account and create a free tier kafka project in it.
+We use aiven for kafka and postgress. You need to create and account and create:
+
+- a free tier kafka project
+- a free tier postgres project
 
 Then we'll save the secrets and config in [.secrets](/.secrets) and in your rc file.
 
 ```shell
 export PROJECT_NAME=
 export KAFKA_SERVICE_NAME=
+export POSTGRES_SERVICE_NAME=
 
 avn user login --token
 mkdir -p .secrets
@@ -66,6 +70,7 @@ Then extract the environment variables and add them to your `.zshrc`:
 ```shell
 jq -r '"export KAFKA_BOOTSTRAP_SERVERS=\"" + .service_uri + "\""' .secrets/kafka.json
 jq -r '"export SCHEMA_REGISTRY_URI=\"" + .connection_info.schema_registry_uri + "\""' .secrets/kafka.json
+echo "export POSTGRES_URI=$(avn service get $POSTGRES_SERVICE_NAME --format '{service_uri}')"
 ```
 
 Also, you need to create topics `ticker` and `status`:

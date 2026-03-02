@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>{{ dashboard['name'] }} - Dashboard</title>
+        <link rel="icon" type="image/x-icon" href="/assets/favicon.ico" />
+        <link rel="shortcut icon" type="image/x-icon" href="/assets/favicon.ico" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no"
+        />
+        <script type="module" src="https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-datagrid@{{perspective_version}}/dist/cdn/perspective-viewer-datagrid.js"></script>
+        <script type="module" src="https://cdn.jsdelivr.net/npm/@finos/perspective-viewer-d3fc@{{perspective_version}}/dist/cdn/perspective-viewer-d3fc.js"></script>
+
+        <link
+            rel="stylesheet"
+            crossorigin="anonymous"
+            href="https://cdn.jsdelivr.net/npm/@finos/perspective-viewer@{{perspective_version}}/dist/css/pro.css"
+        />
+
+        <style>
+            body {
+                height: 100vh;
+                width: 100vw;
+                font-family: 'Roboto Mono';
+                overflow: scroll;
+                margin: 0;
+                display: flex;
+                flex-direction: column;
+            }
+            .toolbar {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 8px 16px;
+                background: #f5f5f5;
+                border-bottom: 1px solid #ddd;
+                flex-shrink: 0;
+            }
+            .toolbar .name { font-weight: 600; }
+            .toolbar a { color: #0066cc; text-decoration: none; font-size: 0.9em; }
+            .toolbar a:hover { text-decoration: underline; }
+            .toolbar button {
+                padding: 4px 12px;
+                cursor: pointer;
+                border: 1px solid #999;
+                background: white;
+                border-radius: 3px;
+            }
+            .toolbar button:hover { background: #eee; }
+            .toolbar .status { font-size: 0.85em; color: #666; }
+            .perspective-table-class {
+                position: relative;
+                flex: 1;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="toolbar">
+            <span class="name">{{ dashboard['name'] }}</span>
+            <span class="status">({{ dashboard['table_name'] }})</span>
+            <button id="save-btn">Save</button>
+            <a href="/dashboards">Back to list</a>
+        </div>
+
+        <perspective-viewer id="viewer" class="perspective-table-class"></perspective-viewer>
+
+        <script type="module">
+            import "https://cdn.jsdelivr.net/npm/@finos/perspective-viewer@{{perspective_version}}/dist/cdn/perspective-viewer.js";
+            import perspective from "https://cdn.jsdelivr.net/npm/@finos/perspective@{{perspective_version}}/dist/cdn/perspective.js";
+
+            const viewer = document.getElementById("viewer");
+            const dashboardId = "{{ dashboard['id'] }}";
+            const tableName = "{{ dashboard['table_name'] }}";
+            const savedConfig = {% raw viewer_config_json %};
+
+            const ws_protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+            const websocket_uri = ws_protocol + "//" + window.location.host + "/websocket";
+            const websocket = await perspective.websocket(websocket_uri);
+            const table = await websocket.open_table(tableName);
+
+            await viewer.load(table);
+            await viewer.restore(savedConfig);
+
+            document.getElementById("save-btn").addEventListener("click", async () => {
+                const config = await viewer.save();
+                const resp = await fetch("/api/dashboards", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        name: "{{ dashboard['name'] }}",
+                        table_name: tableName,
+                        viewer_config: config,
+                    }),
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    window.location.href = "/dashboards/" + data.id;
+                }
+            });
+        </script>
+    </body>
+</html>

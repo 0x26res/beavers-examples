@@ -23,6 +23,7 @@ dependencies = [
   "perspective-python<4",
   "protarrow",
   "protobuf",
+  "psycopg2-binary",
   "tornado",
   "websockets",
 ]
