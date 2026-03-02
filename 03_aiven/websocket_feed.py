@@ -14,6 +14,7 @@ from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.protobuf import ProtobufSerializer
 from confluent_kafka.serialization import MessageField, SerializationContext
 
+from util.kafka_util import get_kafka_ssl_config
 from util.proto_util import make_serializers, make_status, make_ticker
 
 logger = logging.getLogger(__name__)
@@ -100,19 +101,14 @@ async def run_web_socket(
 
 
 def main():
+    set_logger()
     schema_registry_client = SchemaRegistryClient(
         {"url": os.environ["SCHEMA_REGISTRY_URI"]}
     )
     ticker_serializer, status_serializer = make_serializers(schema_registry_client)
 
     producer = confluent_kafka.Producer(
-        {
-            "bootstrap.servers": os.environ["KAFKA_BOOTSTRAP_SERVERS"],
-            "security.protocol": "SSL",
-            "ssl.ca.location": os.environ.get("KAFKA_SSL_CA", ".secrets/ca.pem"),
-            "ssl.certificate.location": os.environ.get("KAFKA_SSL_CERT", ".secrets/service.cert"),
-            "ssl.key.location": os.environ.get("KAFKA_SSL_KEY", ".secrets/service.key"),
-        },
+        get_kafka_ssl_config(),
         on_delivery=on_delivery,
         error_cb=on_error,
     )
@@ -127,5 +123,4 @@ def main():
 
 
 if __name__ == "__main__":
-    set_logger()
     main()

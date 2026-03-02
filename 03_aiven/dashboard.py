@@ -1,6 +1,5 @@
 import dataclasses
 import datetime
-import os
 import pathlib
 
 import pandas as pd
@@ -15,6 +14,7 @@ from beavers.perspective_wrapper import (
 )
 
 from aiven_protos.coinbase_pb2 import Ticker
+from util.kafka_util import get_kafka_ssl_config
 from util.proto_util import ProtoArrowParser
 
 TICKER_SCHEMA = protarrow.message_type_to_schema(Ticker)
@@ -116,20 +116,10 @@ def dashboard():
 
     kafka_driver = KafkaDriver.create(
         dag,
-        producer_config={
-            "bootstrap.servers": os.environ["KAFKA_BOOTSTRAP_SERVERS"],
-            "security.protocol": "SSL",
-            "ssl.ca.location": os.environ.get("KAFKA_SSL_CA", ".secrets/ca.pem"),
-            "ssl.certificate.location": os.environ.get("KAFKA_SSL_CERT", ".secrets/service.cert"),
-            "ssl.key.location": os.environ.get("KAFKA_SSL_KEY", ".secrets/service.key"),
-        },
+        producer_config=get_kafka_ssl_config(),
         consumer_config={
             "group.id": "beavers",
-            "bootstrap.servers": os.environ["KAFKA_BOOTSTRAP_SERVERS"],
-            "security.protocol": "SSL",
-            "ssl.ca.location": os.environ.get("KAFKA_SSL_CA", ".secrets/ca.pem"),
-            "ssl.certificate.location": os.environ.get("KAFKA_SSL_CERT", ".secrets/service.cert"),
-            "ssl.key.location": os.environ.get("KAFKA_SSL_KEY", ".secrets/service.key"),
+            **get_kafka_ssl_config(),
         },
         source_topics={
             "ticker": SourceTopic.from_relative_time(

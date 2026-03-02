@@ -42,20 +42,30 @@ cd beavers-examples/03_aiven/
 uv sync
 ```
 
-### Set Up Kafka
+### Set Up Aiven Kafka
 
-We use aiven for kafka. You need to create and account, and set up the secret keys:
+We use aiven for kafka. You need to create and account and create a free tier kafka project in it.
+
+Then we'll save the secrets and config in [.secrets](/.secrets) and in your rc file.
 
 ```shell
-export KAFKA_BOOTSTRAP_SERVERS="xxx"
+export PROJECT_NAME=
+export KAFKA_SERVICE_NAME=
+
+avn user login --token
 mkdir -p .secrets
-touch .secrets/ca.pem .secrets/service.cert .secrets/service.key # fill from the values in 
+avn service user-creds-download --target-directory=.secrets --username avnadmin $KAFKA_SERVICE_NAME
+avn service get $KAFKA_SERVICE_NAME --project=$PROJECT_NAME --json > .secrets/kafka.json
 ```
 
-Also, you need to:
+Then extract the environment variables and add them to your `.zshrc`:
 
-- create topics `ticker` and `status` in their UI.
-- find the schema registry URL with username and password and put it in `$SCHEMA_REGISTRY_URI`.
+```shell
+jq -r '"export KAFKA_BOOTSTRAP_SERVERS=\"" + .service_uri + "\""' .secrets/kafka.json
+jq -r '"export SCHEMA_REGISTRY_URI=\"" + .connection_info.schema_registry_uri + "\""' .secrets/kafka.json
+```
+
+Also, you need to create topics `ticker` and `status` in the Aiven UI.
 
 ### Publish Coinbase's Market Data on Kafka
 
@@ -63,7 +73,7 @@ In this step, we'll run a simple python job that listen to Coinbase's Websocket 
 the `ticker` and `status` Kafka topic.
 
 ```shell
-uv run python ./websocket_feed.py
+uv run websocket-feed
 ```
 
 You should now be able to see the Coinbase data streaming on Kafka in the Aiven console.
@@ -73,7 +83,7 @@ You should now be able to see the Coinbase data streaming on Kafka in the Aiven 
 The dashboard consumes the data from aiven kafka and displays it in realtime.
 
 ```shell
-uv run python ./dashboard.py
+uv run dashboard
 ```
 
 You can see the dashboard in http://localhost:8082/ticker.

@@ -23,7 +23,12 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest",
+    "aiven-client",
 ]
+
+[project.scripts]
+websocket-feed = "websocket_feed:main"
+dashboard = "dashboard:dashboard"
 
 [tool.hatch.build.hooks.protobuf]
 dependencies = [
