@@ -1,42 +1,47 @@
 [build-system]
-requires = ["hatchling"]
 build-backend = "hatchling.build"
+requires = [ "hatchling" ]
 
 [project]
 name = "beavers-aiven-example"
 version = "0.1.0"
 description = "Beavers & Aiven Kafka example"
 requires-python = ">=3.10,<3.14"
-dependencies = [
-    "beavers[pyarrow,confluent_kafka,perspective-python]",
-    "confluent-kafka[protobuf]",
-    "googleapis-common-protos",
-    "grpcio",
-    "grpcio-tools",
-    "perspective-python<4",
-    "protarrow",
-    "protobuf",
-    "tornado",
-    "websockets",
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
 ]
+dependencies = [
+  "beavers[confluent_kafka,perspective-python,pyarrow]",
+  "confluent-kafka[protobuf]",
+  "googleapis-common-protos",
+  "grpcio",
+  "grpcio-tools",
+  "perspective-python<4",
+  "protarrow",
+  "protobuf",
+  "tornado",
+  "websockets",
+]
+scripts.dashboard = "dashboard:dashboard"
+scripts.websocket-feed = "websocket_feed:main"
 
 [dependency-groups]
 dev = [
-    "pytest",
-    "aiven-client",
+  "aiven-client",
+  "pytest",
 ]
 
-[project.scripts]
-websocket-feed = "websocket_feed:main"
-dashboard = "dashboard:dashboard"
-
-[tool.hatch.build.hooks.protobuf]
-dependencies = [
+[tool.hatch]
+build.hooks.protobuf.dependencies = [
   "hatch-protobuf",
   "grpcio-tools",
 ]
-generate_pyi = true
-generate_grpc = false
-import_site_packages = true
-proto_paths = [ "protos" ]
-output_path = "aiven_protos"
+build.hooks.protobuf.generate_pyi = true
+build.hooks.protobuf.generate_grpc = false
+build.hooks.protobuf.import_site_packages = true
+build.hooks.protobuf.proto_paths = [ "protos" ]
+build.hooks.protobuf.output_path = "aiven_protos"
