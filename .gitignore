@@ -163,4 +163,4 @@ cython_debug/
 
 # aiven secrets
 .secrets
-aiven_protos
+/03_aiven/aiven_protos/*_pb2.*
