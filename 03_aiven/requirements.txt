@@ -3,3 +3,8 @@ duckdb
 pytest
 tornado
 websockets
+protobuf
+grpcio-tools
+grpcio
+googleapis-common-protos
+confluent-kafka[protobuf]

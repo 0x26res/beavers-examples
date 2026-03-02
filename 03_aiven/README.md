@@ -44,9 +44,15 @@ source ./.venv/bin/activate
 uv pip install -r requirements.txt
 ```
 
+### Generate Protos Python Code
+
+```shell
+python ./protoc.py
+```
+
 ### Set Up Kafka
 
-We use aiven for kafka. You need to create and account, and set up the secret keys.
+We use aiven for kafka. You need to create and account, and set up the secret keys:
 
 ```shell
 export KAFKA_BOOTSTRAP_SERVERS="xxx"
@@ -54,17 +60,14 @@ mkdir -p .secrets
 touch .secrets/ca.pem .secrets/service.cert .secrets/service.key # fill from the values in 
 ```
 
-Once started you can create 2 Kafka topics called `ticker` and `status`
-
-```shell
-docker exec simple_kafka /opt/kafka/bin/kafka-topics.sh --create --topic=ticker --partitions=1 --bootstrap-server=localhost:9092 --replication-factor=1
-docker exec simple_kafka /opt/kafka/bin/kafka-topics.sh --create --topic=status --partitions=1 --bootstrap-server=localhost:9092 --replication-factor=1
-```
+Also, you need to:
+- create topics `ticker` and `status` in their UI.
+- find the schema registry URL with username and password and put it in `$SCHEMA_REGISTRY_URI`.
 
 ### Publish Coinbase's Market Data on Kafka
 
 In this step, we'll run a simple python job that listen to Coinbase's Websocket market data API, and publish the data on
-the `ticker` Kafka topic.
+the `ticker` and `status` Kafka topic.
 
 ```shell
 python ./websocket_feed.py

@@ -163,3 +163,4 @@ cython_debug/
 
 # aiven secrets
 .secrets
+aiven_protos

@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+message Ticker {
+  optional int64 sequence = 1;
+  optional string product_id = 2;
+  // Historic info
+  optional double open_24h = 3;
+  optional double low_24h = 4;
+  optional double high_24h = 5;
+  optional double volume_24h = 6;
+  optional double volume_30d = 7;
+  // Bid/Ask info
+  optional double best_bid = 8;
+  optional double best_bid_size = 9;
+  optional double best_ask = 10;
+  optional double best_ask_size = 11;
+  // Last trade info
+  optional string side = 12;
+  optional double price = 13;
+  optional google.protobuf.Timestamp time = 14;
+  optional int64 trade_id = 15;
+  optional double last_size = 16;
+}
+
+message Status {
+  optional string id = 1;
+  optional string base_currency = 2;
+  optional string quote_currency = 3;
+  optional double base_increment = 4;
+  optional double quote_increment = 5;
+  optional string display_name = 6;
+  optional string status = 7;
+  optional string status_message = 8;
+  optional double min_market_funds = 9;
+  optional bool post_only = 10;
+  optional bool limit_only = 11;
+  optional bool cancel_only = 12;
+  optional bool fx_stablecoin = 13;
+  optional string type = 14;
+  optional bool margin_enabled = 15;
+  optional bool auction_mode = 16;
+  optional double max_slippage_percentage = 17;
+}
