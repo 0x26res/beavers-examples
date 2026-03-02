@@ -68,7 +68,12 @@ jq -r '"export KAFKA_BOOTSTRAP_SERVERS=\"" + .service_uri + "\""' .secrets/kafka
 jq -r '"export SCHEMA_REGISTRY_URI=\"" + .connection_info.schema_registry_uri + "\""' .secrets/kafka.json
 ```
 
-Also, you need to create topics `ticker` and `status` in the Aiven web console.
+Also, you need to create topics `ticker` and `status`:
+
+```shell
+avn service topic-create $KAFKA_SERVICE_NAME ticker --partitions=1 --replication=2
+avn service topic-create $KAFKA_SERVICE_NAME status --partitions=1 --replication=2
+```
 
 ### Publish Coinbase's Market Data on Kafka
 
