@@ -36,16 +36,10 @@ git clone https://github.com/0x26res/beavers-examples
 cd beavers-examples/03_aiven/
 ```
 
-### Install Dependencies
+### Install Dependencies / Build Protos
 
 ```shell
 uv sync
-```
-
-### Generate Protos Python Code
-
-```shell
-uv run python ./protoc.py
 ```
 
 ### Set Up Kafka
@@ -75,6 +69,9 @@ uv run python ./websocket_feed.py
 You should now be able to see the Coinbase data streaming on Kafka in the Aiven console.
 
 ### Run the Dashboard
+
+
+The dashboard consumes the data from aiven kafka and displays it in realtime. 
 
 ```shell
 uv run python ./dashboard.py

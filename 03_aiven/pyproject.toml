@@ -1,12 +1,15 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "beavers-aiven-example"
 version = "0.1.0"
 description = "Beavers & Aiven Kafka example"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.14"
 dependencies = [
     "beavers[pyarrow,confluent_kafka,perspective-python]",
     "confluent-kafka[protobuf]",
-    "duckdb",
     "googleapis-common-protos",
     "grpcio",
     "grpcio-tools",
@@ -21,3 +24,14 @@ dependencies = [
 dev = [
     "pytest",
 ]
+
+[tool.hatch.build.hooks.protobuf]
+dependencies = [
+  "hatch-protobuf",
+  "grpcio-tools",
+]
+generate_pyi = true
+generate_grpc = false
+import_site_packages = true
+proto_paths = [ "protos" ]
+output_path = "aiven_protos"
