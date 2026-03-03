@@ -1,5 +1,6 @@
 import dataclasses
 import datetime
+import logging
 import pathlib
 import uuid
 
@@ -134,8 +135,7 @@ def run_dashboard_app(kafka_driver: KafkaDriver, port: int = 8082) -> None:
     table_configs = [node.get_table_config() for node in nodes]
     table_names = [tc.name for tc in table_configs]
 
-    conn = get_connection()
-    store = DashboardStore(conn)
+    store = DashboardStore(get_connection)
     store.ensure_table()
 
     web_app = tornado.web.Application(
@@ -186,6 +186,10 @@ def run_dashboard_app(kafka_driver: KafkaDriver, port: int = 8082) -> None:
 
 
 def dashboard():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
     dag = Dag()
     ticker_raw = dag.pa.source_table(schema=TICKER_SCHEMA, name="ticker")
     ticker = dag.pa.table_stream(add_dollar_volume, schema=TICKER_SCHEMA).map(
@@ -226,11 +230,14 @@ def dashboard():
         ),
     )
 
+    logger = logging.getLogger(__name__)
     kafka_driver = KafkaDriver.create(
         dag,
         producer_config=get_kafka_ssl_config(),
         consumer_config={
             "group.id": str(uuid.uuid4()),
+            "logger": logger,
+            "error_cb": lambda err: logger.error("Kafka consumer error: %s", err),
             **get_kafka_ssl_config(),
         },
         source_topics={
