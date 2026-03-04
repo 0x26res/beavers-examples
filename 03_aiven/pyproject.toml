@@ -17,6 +17,7 @@ classifiers = [
 dependencies = [
   "beavers[confluent_kafka,perspective-python,pyarrow]",
   "confluent-kafka[protobuf]",
+  "duckdb",
   "googleapis-common-protos",
   "grpcio",
   "grpcio-tools",

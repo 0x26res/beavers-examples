@@ -28,6 +28,14 @@ from dashboard_handlers import (
     DashboardViewHandler,
 )
 from dashboard_store import DashboardStore
+from query_handlers import (
+    QueryApiHandler,
+    QueryDetailHandler,
+    QueryListHandler,
+    QueryPageHandler,
+    QueryResultHandler,
+    ResultStore,
+)
 from util.kafka_util import get_kafka_ssl_config
 from util.postgres_util import get_connection
 from util.proto_util import ProtoArrowParser
@@ -137,6 +145,8 @@ def run_dashboard_app(kafka_driver: KafkaDriver, port: int = 8082) -> None:
 
     store = DashboardStore(get_connection)
     store.ensure_table()
+    store.ensure_queries_table()
+    result_store = ResultStore()
 
     web_app = tornado.web.Application(
         [
@@ -174,6 +184,35 @@ def run_dashboard_app(kafka_driver: KafkaDriver, port: int = 8082) -> None:
                 r"/tables/([a-z0-9_]+)",
                 TableWithSaveHandler,
                 {"table_configs": table_configs},
+            ),
+            (
+                r"/api/query-results/(.+)",
+                QueryResultHandler,
+                {"result_store": result_store},
+            ),
+            (
+                r"/api/queries/(.+)",
+                QueryDetailHandler,
+                {"store": store},
+            ),
+            (
+                r"/api/queries",
+                QueryApiHandler,
+                {"store": store},
+            ),
+            (
+                r"/queries/run",
+                QueryPageHandler,
+                {
+                    "perspective_server": server,
+                    "result_store": result_store,
+                    "store": store,
+                },
+            ),
+            (
+                r"/queries",
+                QueryListHandler,
+                {"store": store},
             ),
             (r"/", tornado.web.RedirectHandler, {"url": "/dashboards"}),
         ],
