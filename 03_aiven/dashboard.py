@@ -233,7 +233,11 @@ def dashboard():
     logger = logging.getLogger(__name__)
     kafka_driver = KafkaDriver.create(
         dag,
-        producer_config=get_kafka_ssl_config(),
+        producer_config={
+            "logger": logger,
+            "error_cb": lambda err: logger.error("Kafka producer error: %s", err),
+            **get_kafka_ssl_config(),
+        },
         consumer_config={
             "group.id": str(uuid.uuid4()),
             "logger": logger,

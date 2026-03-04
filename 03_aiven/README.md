@@ -3,7 +3,9 @@
 This example shows how you can use [Beavers](https://github.com/tradewelltech/beavers)
 with [Aiven](https://aiven.io/) kafka free tier account, and their schema registry with Protobuf.
 
-![aiven](https://raw.githubusercontent.com/0x26res/beavers-examples/master/03_aiven/screenshots/screenshot.png "Aiven")
+![Dashboards](https://raw.githubusercontent.com/0x26res/beavers-examples/master/03_aiven/screenshots/dashboards.png "Dashboards")
+![ticker_by_volume_24h](https://raw.githubusercontent.com/0x26res/beavers-examples/master/03_aiven/screenshots/ticker_by_volume_24h.png "Ticker by volume 24h")
+![volume_to_change](https://raw.githubusercontent.com/0x26res/beavers-examples/master/03_aiven/screenshots/volume_to_change.png "volume_to_change")
 
 ## Architecture Overview
 

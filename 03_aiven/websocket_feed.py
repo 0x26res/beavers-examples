@@ -108,7 +108,10 @@ def main():
     ticker_serializer, status_serializer = make_serializers(schema_registry_client)
 
     producer = confluent_kafka.Producer(
-        get_kafka_ssl_config(),
+        {
+            "logger": logger,
+            **get_kafka_ssl_config(),
+        },
         on_delivery=on_delivery,
         error_cb=on_error,
     )
