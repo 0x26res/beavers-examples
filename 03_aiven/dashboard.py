@@ -20,7 +20,7 @@ from beavers.perspective_wrapper import (
 )
 from perspective.handlers.tornado import PerspectiveTornadoHandler
 
-from aiven_protos.coinbase_pb2 import Ticker
+from aiven_protos.coinbase_pb2 import Status, Ticker
 from dashboard_handlers import (
     DashboardApiHandler,
     DashboardDetailHandler,
@@ -39,6 +39,7 @@ from util.kafka_util import get_kafka_ssl_config
 from util.postgres_util import get_connection
 from util.proto_util import ProtoArrowParser
 
+STATUS_SCHEMA = protarrow.message_type_to_schema(Status)
 TICKER_SCHEMA = protarrow.message_type_to_schema(Ticker)
 TICKER_WITH_SPREAD_SCHEMA = TICKER_SCHEMA.append(pa.field("spread", pa.float64()))
 TICKER_WITH_AVERAGE_SCHEMA = TICKER_SCHEMA.append(
@@ -264,6 +265,13 @@ def dashboard():
         ),
     )
 
+    status_source = dag.pa.source_table(schema=STATUS_SCHEMA, name="status")
+    status_state = dag.pa.last_by_keys(status_source, keys=["id"])
+    dag.psp.to_perspective(
+        status_state,
+        PerspectiveTableDefinition(name="status", index_column="id"),
+    )
+
     logger = logging.getLogger(__name__)
     kafka_driver = KafkaDriver.create(
         dag,
@@ -283,7 +291,12 @@ def dashboard():
                 "ticker",
                 ProtoArrowParser.create(Ticker),
                 relative_time=pd.to_timedelta("1h"),
-            )
+            ),
+            "status": SourceTopic.from_relative_time(
+                "status",
+                ProtoArrowParser.create(Status),
+                relative_time=pd.to_timedelta("24h"),
+            ),
         },
         sink_topics={},
     )
