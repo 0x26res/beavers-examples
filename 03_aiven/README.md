@@ -117,3 +117,18 @@ Dashboard configurations are persisted in Aiven PostgreSQL. This lets you save a
 5. Click a saved dashboard to view it — it loads live data from Kafka with the saved viewer layout restored
 
 The `dashboards` table is created automatically on startup. It stores the viewer configuration as JSONB alongside the dashboard name and the Perspective table it connects to.
+
+### Ad-hoc DuckDB Queries
+
+You can run ad-hoc SQL queries against the live data using [DuckDB](https://duckdb.org/). This extracts the current state of all Perspective tables as PyArrow tables, registers them in an in-memory DuckDB connection, and executes your SQL. Results are displayed in a Perspective viewer.
+
+1. Navigate to http://localhost:8082/queries/run
+2. The available table names (e.g. `ticker`, `ticker_with_spread`, `ticker_with_average`) are shown above the editor
+3. Write a SQL query and click "Run" — for example:
+
+   ```sql
+   SELECT * EXCLUDE (sequence, trade_id) FROM ticker WHERE price < 0.99 AND product_id LIKE '%-USD' ORDER BY price DESC;
+   ```
+
+4. Results are displayed in an interactive Perspective viewer
+5. Save queries for reuse — browse saved queries at http://localhost:8082/queries
