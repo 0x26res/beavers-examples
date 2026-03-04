@@ -160,6 +160,26 @@ class DashboardStore:
 
         return self._execute(_op)
 
+    def update_query(self, query_id: str, name: str, sql_text: str) -> dict | None:
+        def _op(connection):
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    UPDATE queries SET name = %s, sql_text = %s
+                    WHERE id = %s
+                    RETURNING id, name, sql_text, created_at
+                    """,
+                    (name, sql_text, query_id),
+                )
+                row = cursor.fetchone()
+                if row is None:
+                    return None
+                columns = [desc[0] for desc in cursor.description]
+            connection.commit()
+            return dict(zip(columns, row))
+
+        return self._execute(_op)
+
     def delete_query(self, query_id: str) -> bool:
         def _op(connection):
             with connection.cursor() as cursor:
