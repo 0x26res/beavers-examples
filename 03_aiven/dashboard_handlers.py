@@ -61,9 +61,11 @@ class DashboardListHandler(tornado.web.RequestHandler):
 
     async def get(self) -> None:
         dashboards = self._store.list()
+        queries = self._store.list_queries()
         await self.render(
             _TEMPLATES_DIR + "/dashboard_list.html",
             dashboards=dashboards,
+            queries=queries,
             table_names=self._table_names,
         )
 

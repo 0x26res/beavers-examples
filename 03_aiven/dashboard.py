@@ -31,7 +31,6 @@ from dashboard_store import DashboardStore
 from query_handlers import (
     QueryApiHandler,
     QueryDetailHandler,
-    QueryListHandler,
     QueryPageHandler,
     QueryResultHandler,
     ResultStore,
@@ -208,11 +207,6 @@ def run_dashboard_app(kafka_driver: KafkaDriver, port: int = 8082) -> None:
                     "result_store": result_store,
                     "store": store,
                 },
-            ),
-            (
-                r"/queries",
-                QueryListHandler,
-                {"store": store},
             ),
             (r"/", tornado.web.RedirectHandler, {"url": "/dashboards"}),
         ],

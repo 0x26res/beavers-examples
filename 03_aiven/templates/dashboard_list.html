@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Dashboards</title>
+        <title>Home</title>
         <link rel="icon" type="image/x-icon" href="/assets/favicon.ico" />
         <style>
             body {
@@ -28,11 +28,28 @@
                 font-size: 0.9em;
             }
             .delete-btn:hover { text-decoration: underline; }
+            .sql-preview {
+                font-family: monospace;
+                font-size: 0.85em;
+                color: #555;
+                max-width: 400px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
         </style>
     </head>
     <body>
-        <h1>Saved Dashboards</h1>
+        <h1>Dashboard</h1>
 
+        <div class="tables">
+            <h2>Live Tables</h2>
+            {% for name in table_names %}
+                <a href="/tables/{{ name }}">{{ name }}</a>
+            {% end %}
+        </div>
+
+        <h2>Saved Dashboards</h2>
         {% if dashboards %}
         <table>
             <thead>
@@ -45,7 +62,7 @@
             </thead>
             <tbody>
                 {% for d in dashboards %}
-                <tr id="row-{{ d['id'] }}">
+                <tr id="dash-{{ d['id'] }}">
                     <td><a href="/dashboards/{{ d['id'] }}">{{ d['name'] }}</a></td>
                     <td>{{ d['table_name'] }}</td>
                     <td>{{ d['created_at'].strftime('%Y-%m-%d %H:%M') if d['created_at'] else '' }}</td>
@@ -58,25 +75,45 @@
         <p>No saved dashboards yet.</p>
         {% end %}
 
-        <div class="tables">
-            <h2>Live Tables</h2>
-            {% for name in table_names %}
-                <a href="/tables/{{ name }}">{{ name }}</a>
-            {% end %}
-        </div>
-
-        <div class="tables">
-            <h2>Queries</h2>
-            <a href="/queries/run">New Query</a>
-            <a href="/queries">Saved Queries</a>
-        </div>
+        <h2>Saved Queries <a href="/queries/run" style="font-size: 0.8em; font-weight: normal;">+ New Query</a></h2>
+        {% if queries %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>SQL</th>
+                    <th>Created</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for q in queries %}
+                <tr id="query-{{ q['id'] }}">
+                    <td><a href="/queries/run?saved={{ q['id'] }}">{{ q['name'] }}</a></td>
+                    <td class="sql-preview">{{ q['sql_text'] }}</td>
+                    <td>{{ q['created_at'].strftime('%Y-%m-%d %H:%M') if q['created_at'] else '' }}</td>
+                    <td><button class="delete-btn" onclick="deleteQuery('{{ q['id'] }}')">delete</button></td>
+                </tr>
+                {% end %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No saved queries yet. <a href="/queries/run">Create one</a>.</p>
+        {% end %}
 
         <script>
             async function deleteDashboard(id) {
                 if (!confirm("Delete this dashboard?")) return;
                 const resp = await fetch("/api/dashboards/" + id, {method: "DELETE"});
                 if (resp.ok) {
-                    document.getElementById("row-" + id).remove();
+                    document.getElementById("dash-" + id).remove();
+                }
+            }
+            async function deleteQuery(id) {
+                if (!confirm("Delete this query?")) return;
+                const resp = await fetch("/api/queries/" + id, {method: "DELETE"});
+                if (resp.ok) {
+                    document.getElementById("query-" + id).remove();
                 }
             }
         </script>
