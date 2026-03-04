@@ -102,7 +102,7 @@ The dashboard consumes the data from aiven kafka and displays it in realtime.
 uv run dashboard
 ```
 
-You can see the dashboard in http://localhost:8082/ticker.
+You can see the dashboard in http://localhost:8082/.
 
 ### Saving Dashboards
 
@@ -110,7 +110,7 @@ Dashboard configurations are persisted in Aiven PostgreSQL. This lets you save a
 
 **How it works:**
 
-1. Open any table view (e.g. http://localhost:8082/ticker)
+1. Open any table view (e.g. http://localhost:8082/tables/ticker)
 2. Customize the Perspective viewer interactively (change columns, add filters, switch to a chart, etc.)
 3. Enter a name and click "Save Dashboard" — the viewer config is saved as JSONB in a `dashboards` table in PostgreSQL
 4. Browse saved dashboards at http://localhost:8082/dashboards

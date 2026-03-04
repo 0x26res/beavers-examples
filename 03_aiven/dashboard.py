@@ -171,10 +171,11 @@ def run_dashboard_app(kafka_driver: KafkaDriver, port: int = 8082) -> None:
                 {"store": store},
             ),
             (
-                r"/([a-z0-9_]*)",
+                r"/tables/([a-z0-9_]+)",
                 TableWithSaveHandler,
                 {"table_configs": table_configs},
             ),
+            (r"/", tornado.web.RedirectHandler, {"url": "/dashboards"}),
         ],
         serve_traceback=True,
     )
