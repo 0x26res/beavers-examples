@@ -1,5 +1,4 @@
 import dataclasses
-from datetime import datetime
 from typing import Optional, Sequence, Tuple, Type
 
 import confluent_kafka
@@ -17,6 +16,7 @@ from google.protobuf.message import Message as ProtoMessage
 from google.protobuf.timestamp_pb2 import Timestamp
 
 from aiven_protos.coinbase_pb2 import Status, Ticker
+import datetime
 
 
 def _optional_float(data: dict, key: str) -> Optional[float]:
@@ -27,14 +27,14 @@ def _optional_float(data: dict, key: str) -> Optional[float]:
 
 
 def _parse_timestamp(time_str: str) -> Timestamp:
-    dt = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
+    dt = datetime.datetime.fromisoformat(time_str.replace("Z", "+00:00"))
     ts = Timestamp()
     ts.FromDatetime(dt)
     return ts
 
 
-def make_ticker(data: dict) -> Ticker:
-    kwargs = {}
+def make_ticker(data: dict, now: datetime.datetime) -> Ticker:
+    kwargs = {"received_at": Timestamp().FromDatetime(now)}
     if "sequence" in data:
         kwargs["sequence"] = int(data["sequence"])
     if "product_id" in data:
@@ -58,15 +58,15 @@ def make_ticker(data: dict) -> Ticker:
     if "side" in data:
         kwargs["side"] = data["side"]
     if "time" in data:
-        kwargs["time"] = _parse_timestamp(data["time"])
+        kwargs["last_trade_at"] = _parse_timestamp(data["time"])
     v = data.get("trade_id")
     if v is not None:
         kwargs["trade_id"] = int(v)
     return Ticker(**kwargs)
 
 
-def make_status(data: dict) -> Status:
-    kwargs = {}
+def make_status(data: dict, now: datetime.datetime) -> Status:
+    kwargs = {"received_at": Timestamp().FromDatetime(now)}
     for field in (
         "id",
         "base_currency",

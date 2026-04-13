@@ -19,9 +19,10 @@ message Ticker {
   // Last trade info
   optional string side = 12;
   optional double price = 13;
-  optional google.protobuf.Timestamp time = 14;
+  optional google.protobuf.Timestamp last_trade_at = 14;
   optional int64 trade_id = 15;
   optional double last_size = 16;
+  optional google.protobuf.Timestamp received_at = 17;
 }
 
 message Status {
@@ -42,4 +43,5 @@ message Status {
   optional bool margin_enabled = 15;
   optional bool auction_mode = 16;
   optional double max_slippage_percentage = 17;
+  optional google.protobuf.Timestamp received_at = 18;
 }

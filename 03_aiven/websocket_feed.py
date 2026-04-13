@@ -2,6 +2,7 @@
 Listen to market data from coinbase websocket API and publish it to kafka
 """
 
+import datetime
 import asyncio
 import json
 import logging
@@ -10,6 +11,7 @@ import sys
 
 import confluent_kafka
 import websockets
+from google.protobuf.json_format import MessageToJson
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.protobuf import ProtobufSerializer
 from confluent_kafka.serialization import MessageField, SerializationContext
@@ -54,17 +56,19 @@ async def run_web_socket(
 
         while True:
             payload = await ws.recv()
+            now = datetime.datetime.now(datetime.UTC)
             data = json.loads(payload)
             data_type = data.pop("type")
 
             if data_type == "ticker":
-                ticker = make_ticker(data)
+                ticker = make_ticker(data, now)
                 ctx = SerializationContext("ticker", MessageField.VALUE)
                 producer.produce(
                     topic="ticker",
                     value=ticker_serializer(ticker, ctx),
                     key=data["product_id"],
                 )
+                logger.debug(MessageToJson(ticker, preserving_proto_field_name=True))
             elif data_type == "status":
                 product_ids = sorted([p["id"] for p in data["products"] if p["id"]])
                 if subscribed != product_ids:
@@ -82,12 +86,15 @@ async def run_web_socket(
                 else:
                     logger.info("Status unchanged")
                 for product in data["products"]:
-                    status = make_status(product)
+                    status = make_status(product, now)
                     ctx = SerializationContext("status", MessageField.VALUE)
                     producer.produce(
                         topic="status",
                         value=status_serializer(status, ctx),
                         key=product["id"],
+                    )
+                    logger.debug(
+                        MessageToJson(status, preserving_proto_field_name=True)
                     )
             elif data_type == "subscriptions":
                 logger.info(f"Subscriptions: {data}")
